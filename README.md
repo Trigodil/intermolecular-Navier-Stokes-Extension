@@ -18,6 +18,11 @@ This repository contains a **preliminary research manuscript**.
 
 ---
 
+## Contents
+
+- `intermolecular_ns_extension.pdf` — Full manuscript (pre-publication draft)  
+- `interactive_validation.html` — Interactive visualization of model behavior  
+
 ## Overview
 
 This work introduces a modified Navier–Stokes formulation incorporating **intermolecular pressure contributions** using a thermodynamically consistent framework.
