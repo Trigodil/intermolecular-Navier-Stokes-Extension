@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intermolecular Activity NS Model — Full Visualization</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --panel: #111318;
+    --border: #1e2330;
+    --accent1: #4fc3f7;
+    --accent2: #f97316;
+    --accent3: #a78bfa;
+    --accent4: #34d399;
+    --accent5: #fb7185;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --grid: #1a1f2e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', monospace;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  header h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent1);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  header p {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .grid.full { grid-template-columns: 1fr; }
+  .grid.three { grid-template-columns: 1fr 1fr 1fr; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    position: relative;
+  }
+
+  .panel-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .panel-subtitle {
+    font-size: 0.78rem;
+    color: var(--text);
+    margin-bottom: 16px;
+    font-weight: 300;
+  }
+
+  .eq-box {
+    background: var(--bg);
+    border-left: 3px solid var(--accent1);
+    padding: 10px 14px;
+    margin: 8px 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent1);
+    line-height: 1.7;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .eq-box.orange { border-color: var(--accent2); color: var(--accent2); }
+  .eq-box.purple { border-color: var(--accent3); color: var(--accent3); }
+  .eq-box.green  { border-color: var(--accent4); color: var(--accent4); }
+  .eq-box.red    { border-color: var(--accent5); color: var(--accent5); }
+
+  canvas { width: 100% !important; }
+
+  .legend-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .badge {
+    display: inline-block;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2px 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent4);
+    margin: 2px 3px;
+  }
+
+  .kv-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .kv {
+    background: var(--bg);
+    border-radius: 4px;
+    padding: 8px 10px;
+  }
+
+  .kv-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .kv-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent1);
+    margin-top: 2px;
+  }
+
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  .flow-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 0.68rem;
+    color: var(--text);
+    text-align: center;
+    min-width: 90px;
+    line-height: 1.4;
+  }
+
+  .flow-arrow {
+    color: var(--muted);
+    font-size: 1rem;
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+
+  .flow-box .sym {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--accent1);
+    font-size: 0.8rem;
+    display: block;
+  }
+
+  .flow-box.orange .sym { color: var(--accent2); }
+  .flow-box.purple .sym { color: var(--accent3); }
+  .flow-box.green  .sym { color: var(--accent4); }
+  .flow-box.red    .sym { color: var(--accent5); }
+
+  .regime-bar {
+    height: 18px;
+    border-radius: 2px;
+    margin: 6px 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .regime-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    position: relative;
+  }
+
+  .regime-label {
+    font-size: 0.62rem;
+    color: var(--muted);
+    margin-bottom: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .axis-label {
+    font-size: 0.62rem;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+
+  .section-spacer {
+    height: 8px;
+  }
+
+  .note {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 10px;
+    line-height: 1.6;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Intermolecular Activity Extension — Navier–Stokes Model</h1>
+  <p>Full Model Visualization · Governing Equations · Variable Space · Mach / Regime Analysis</p>
+</header>
+
+<div class="grid full" style="max-width:1400px;margin:0 auto 16px;">
+  <div class="panel">
+    <div class="panel-title">Core Governing Equation — Modified Navier–Stokes Momentum</div>
+    <div class="panel-subtitle">Eq. (28) — Modified momentum with intermolecular pressure decomposition</div>
+    <div class="eq-box">
+      ρ Du/Dt  =  −∇P<sub>NS</sub>  −  [2a<sub>air</sub>(T)·n·∇n]  −  [n²·(da<sub>air</sub>/dT)·∇T]  +  μ(T)·∇²u  +  F
+    </div>
+    <div class="flow-row" style="margin-top:14px; gap:4px; flex-wrap:wrap;">
+      <div class="flow-box"><span class="sym">ρ Du/Dt</span>Inertia</div>
+      <div class="flow-arrow">=</div>
+      <div class="flow-box"><span class="sym">−∇P<sub>NS</sub></span>Classical<br>NS pressure</div>
+      <div class="flow-arrow">−</div>
+      <div class="flow-box orange"><span class="sym">2a(T)n∇n</span>Density-coupled<br>intermolecular</div>
+      <div class="flow-arrow">−</div>
+      <div class="flow-box purple"><span class="sym">n²(da/dT)∇T</span>Temp-coupled<br>intermolecular</div>
+      <div class="flow-arrow">+</div>
+      <div class="flow-box green"><span class="sym">μ(T)∇²u</span>Viscous<br>diffusion</div>
+      <div class="flow-arrow">+</div>
+      <div class="flow-box red"><span class="sym">F</span>Body<br>forces</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid" style="max-width:1400px;margin:0 auto 16px;">
+
+  <!-- Pressure decomposition -->
+  <div class="panel">
+    <div class="panel-title">Pressure Decomposition</div>
+    <div class="panel-subtitle">P = P<sub>NS</sub> + P<sub>IM</sub> — Eq. (4) / (21) / (22)</div>
+    <div class="eq-box">P = P<sub>NS</sub> + P<sub>IM</sub></div>
+    <div class="eq-box orange">P<sub>IM</sub> = −a(T)·n² / N<sub>A</sub>²</div>
+    <div class="eq-box purple">∇P<sub>IM</sub> = −2a<sub>air</sub>(T)·n·∇n − n²·(da<sub>air</sub>/dT)·∇T</div>
+    <canvas id="chartPressure" height="180"></canvas>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:#4fc3f7"></div>P_NS (ideal)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>|P_IM| (intermolecular)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>P_total</div>
+    </div>
+    <p class="note">Attractive P<sub>IM</sub> is negative — plotted as magnitude. Dominates at high n, moderate T.</p>
+  </div>
+
+  <!-- Intermolecular Activity Number -->
+  <div class="panel">
+    <div class="panel-title">Intermolecular Activity Number I<sub>a</sub></div>
+    <div class="panel-subtitle">Eq. (16)/(27) — Ratio of potential to thermal energy</div>
+    <div class="eq-box green">I<sub>a</sub> = Σ a<sub>ij</sub>(T)·n<sub>i</sub>·n<sub>j</sub> / [(f(T)/2)·n·k<sub>B</sub>·T]</div>
+    <div class="eq-box">Limit: I<sub>a</sub> → 0  ⟹  P<sub>IM</sub> → 0  ⟹  Classical NS recovered</div>
+    <canvas id="chartIa" height="180"></canvas>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>I<sub>a</sub> vs T at n=10²⁵ m⁻³</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fb7185"></div>Classical NS limit (I<sub>a</sub>=0)</div>
+    </div>
+    <p class="note">I<sub>a</sub> decreases with T (attraction weakens). Non-negligible in upper-atmosphere hypersonic regime.</p>
+  </div>
+
+  <!-- van der Waals attraction parameter -->
+  <div class="panel">
+    <div class="panel-title">Temperature-Dependent Attraction Parameter a(T)</div>
+    <div class="panel-subtitle">Redlich–Kwong scaling — Eq. (8) / (24)</div>
+    <div class="eq-box orange">a<sub>air</sub>(T) = a<sub>0,air</sub> · (T<sub>c,air</sub>/T)^(1/2)</div>
+    <div class="eq-box">da/dT = −a<sub>0</sub>·T<sub>c</sub>^(1/2) / (2·T^(3/2))</div>
+    <canvas id="chartAT" height="180"></canvas>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>a(T) normalized</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4fc3f7"></div>da/dT (magnitude)</div>
+    </div>
+    <p class="note">RK scaling valid to ~2000 K. Beyond this, dissociation and higher-order virial terms apply.</p>
+  </div>
+
+  <!-- Sutherland viscosity -->
+  <div class="panel">
+    <div class="panel-title">Sutherland Transport Properties</div>
+    <div class="panel-subtitle">μ(T) and λ(T) — Eq. (12) / (13)</div>
+    <div class="eq-box">μ(T) = μ₀ · [(T₀+C)/(T+C)] · (T/T₀)^(3/2)</div>
+    <div class="eq-box purple">λ(T) = μ(T)·c<sub>p</sub>(T) / Pr</div>
+    <canvas id="chartVisc" height="180"></canvas>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>μ(T) normalized</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4fc3f7"></div>λ(T) normalized</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Second row -->
+<div class="grid" style="max-width:1400px;margin:0 auto 16px;">
+
+  <!-- Degrees of freedom -->
+  <div class="panel">
+    <div class="panel-title">Effective Degrees of Freedom f(T)</div>
+    <div class="panel-subtitle">Vibrational excitation model — Eq. (10)</div>
+    <div class="eq-box">f(T) = 5 + 2·(Θ<sub>v</sub>/T)²·e^(Θv/T) / (e^(Θv/T)−1)²</div>
+    <div class="eq-box green">c<sub>v</sub>(T) = [f(T)/2]·R/M &nbsp;|&nbsp; c<sub>p</sub>(T) = [f(T)/2+1]·R/M</div>
+    <canvas id="chartDOF" height="180"></canvas>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>f(T)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4fc3f7"></div>c<sub>v</sub>/R (normalized)</div>
+    </div>
+    <p class="note">Θ<sub>v</sub>(N₂) ≈ 3374 K. At low T: f=5 (translational+rotational). At high T: f→7 (vibrational activated).</p>
+  </div>
+
+  <!-- Mach vs Ia -->
+  <div class="panel">
+    <div class="panel-title">Mach Number vs I<sub>a</sub> — Regime Map</div>
+    <div class="panel-subtitle">Energetic significance of intermolecular effects across Mach regimes</div>
+    <canvas id="chartMach" height="230"></canvas>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:#4fc3f7"></div>I<sub>a</sub> at alt=80km</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>I<sub>a</sub> at alt=50km</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>Non-negligible threshold</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fb7185"></div>Classical NS valid</div>
+    </div>
+    <p class="note">I<sub>a</sub> rises with Mach (T↑ but n↓↓ at altitude — competing effects). Upper atmosphere: I<sub>a</sub> largest.</p>
+  </div>
+
+</div>
+
+<!-- Third row: Poiseuille + repulsive ratio + mixture -->
+<div class="grid three" style="max-width:1400px;margin:0 auto 16px;">
+
+  <div class="panel">
+    <div class="panel-title">Planar Poiseuille Flow Verification</div>
+    <div class="panel-subtitle">Velocity profiles: classical vs modified NS</div>
+    <div class="eq-box">u ⊥ ∇P<sub>IM</sub>  →  energy eq. decouples</div>
+    <canvas id="chartPoiseuille" height="200"></canvas>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:#4fc3f7"></div>Classical NS (parabolic)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>Modified (I<sub>a</sub>=0.05)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>Modified (I<sub>a</sub>=0.15)</div>
+    </div>
+    <p class="note">Increasing I<sub>a</sub> stiffens the effective pressure gradient → flatter core, steeper wall gradients.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Repulsive vs Attractive Ratio</div>
+    <div class="panel-subtitle">Validity of b-neglect — Eq. (25)/(29)</div>
+    <div class="eq-box red">P<sub>rep</sub>/|P<sub>IM</sub>| ~ b·k<sub>B</sub>·T / a<sub>air</sub>(T)</div>
+    <canvas id="chartRepRatio" height="200"></canvas>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:#fb7185"></div>Ratio (target regime)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>O(10⁻²) threshold</div>
+    </div>
+    <p class="note">Ratio stays O(10⁻²) for T∈[500,2000]K at intermediate density — b-neglect justified.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Air Mixture Attraction Parameter</div>
+    <div class="panel-subtitle">N₂–O₂ effective a<sub>air</sub>(T) — Eq. (19)/(23)</div>
+    <div class="eq-box orange">a<sub>air</sub> = [a<sub>NN</sub>n²<sub>N</sub> + 2a<sub>NO</sub>n<sub>N</sub>n<sub>O</sub> + a<sub>OO</sub>n²<sub>O</sub>] / n²</div>
+    <div class="eq-box">a<sub>ij</sub> = √(a<sub>i</sub>·a<sub>j</sub>)  (mixing rule, Eq.7)</div>
+    <canvas id="chartMixture" height="150"></canvas>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:#4fc3f7"></div>a<sub>NN</sub>(T)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>a<sub>OO</sub>(T)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>a<sub>air</sub>(T) effective</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Variable reference table -->
+<div class="grid full" style="max-width:1400px;margin:0 auto 16px;">
+  <div class="panel">
+    <div class="panel-title">Complete Variable Reference — Nomenclature</div>
+    <div class="panel-subtitle">All symbols used in the formulation</div>
+    <div class="kv-grid" style="grid-template-columns: repeat(4, 1fr);">
+      <div class="kv"><div class="kv-label">ρ</div><div class="kv-val">Mass density [kg/m³]</div></div>
+      <div class="kv"><div class="kv-label">n</div><div class="kv-val">Number density [m⁻³]</div></div>
+      <div class="kv"><div class="kv-label">u</div><div class="kv-val">Velocity vector [m/s]</div></div>
+      <div class="kv"><div class="kv-label">T</div><div class="kv-val">Temperature [K]</div></div>
+      <div class="kv"><div class="kv-label">P<sub>NS</sub></div><div class="kv-val">Classical NS pressure [Pa]</div></div>
+      <div class="kv"><div class="kv-label">P<sub>IM</sub></div><div class="kv-val">Intermolecular pressure [Pa]</div></div>
+      <div class="kv"><div class="kv-label">a(T)</div><div class="kv-val">vdW attraction coeff [Pa·m⁶/mol²]</div></div>
+      <div class="kv"><div class="kv-label">a₀</div><div class="kv-val">Reference vdW constant</div></div>
+      <div class="kv"><div class="kv-label">T<sub>c</sub></div><div class="kv-val">Critical temperature [K]</div></div>
+      <div class="kv"><div class="kv-label">N<sub>A</sub></div><div class="kv-val">Avogadro constant [mol⁻¹]</div></div>
+      <div class="kv"><div class="kv-label">k<sub>B</sub></div><div class="kv-val">Boltzmann constant [J/K]</div></div>
+      <div class="kv"><div class="kv-label">μ(T)</div><div class="kv-val">Dynamic viscosity [Pa·s]</div></div>
+      <div class="kv"><div class="kv-label">λ(T)</div><div class="kv-val">Thermal conductivity [W/m·K]</div></div>
+      <div class="kv"><div class="kv-label">f(T)</div><div class="kv-val">Effective degrees of freedom</div></div>
+      <div class="kv"><div class="kv-label">Θ<sub>v</sub></div><div class="kv-val">Vibrational temp [K]</div></div>
+      <div class="kv"><div class="kv-label">I<sub>a</sub></div><div class="kv-val">Intermolecular activity number [—]</div></div>
+      <div class="kv"><div class="kv-label">c<sub>v</sub>(T)</div><div class="kv-val">Specific heat (const vol) [J/kg·K]</div></div>
+      <div class="kv"><div class="kv-label">c<sub>p</sub>(T)</div><div class="kv-val">Specific heat (const P) [J/kg·K]</div></div>
+      <div class="kv"><div class="kv-label">Pr</div><div class="kv-val">Prandtl number [—]</div></div>
+      <div class="kv"><div class="kv-label">Φ</div><div class="kv-val">Viscous dissipation function</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Regime validity bar -->
+<div class="grid full" style="max-width:1400px;margin:0 auto 16px;">
+  <div class="panel">
+    <div class="panel-title">Model Validity Regime</div>
+    <div class="panel-subtitle">Where this formulation applies — density, temperature, Knudsen, Mach</div>
+    <canvas id="chartRegime" height="120"></canvas>
+    <p class="note" style="margin-top:8px;">Green = model valid. Yellow = caution. Red = outside scope (rarefied, dissociation, ionization).</p>
+  </div>
+</div>
+
+<script>
+const C = (id, type, data, opts={}) => {
+  const ctx = document.getElementById(id).getContext('2d');
+  return new Chart(ctx, {
+    type,
+    data,
+    options: {
+      responsive: true,
+      animation: { duration: 800 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#111318',
+          borderColor: '#1e2330',
+          borderWidth: 1,
+          titleColor: '#4fc3f7',
+          bodyColor: '#e2e8f0',
+          titleFont: { family: 'IBM Plex Mono', size: 10 },
+          bodyFont: { family: 'IBM Plex Mono', size: 10 },
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#1a1f2e' },
+          ticks: { color: '#64748b', font: { family: 'IBM Plex Mono', size: 9 } }
+        },
+        y: {
+          grid: { color: '#1a1f2e' },
+          ticks: { color: '#64748b', font: { family: 'IBM Plex Mono', size: 9 } }
+        }
+      },
+      ...opts
+    }
+  });
+};
+
+// Temperature range
+const T = Array.from({length:80}, (_,i) => 200 + i*25); // 200K to 2150K
+
+// 1. Pressure decomposition vs n
+const ns = Array.from({length:40}, (_,i) => 1 + i*0.6);
+const Pns = ns.map(n => n * 1.0);
+const Pim = ns.map(n => 0.05 * n * n);
+const Ptot = ns.map((n, i) => Pns[i] + Pim[i]);
+C('chartPressure', 'line', {
+  labels: ns.map(n => n.toFixed(1)),
+  datasets: [
+    { label:'P_NS', data: Pns, borderColor:'#4fc3f7', tension:0.4, borderWidth:2, pointRadius:0 },
+    { label:'|P_IM|', data: Pim, borderColor:'#f97316', tension:0.4, borderWidth:2, pointRadius:0 },
+    { label:'P_total', data: Ptot, borderColor:'#a78bfa', tension:0.4, borderWidth:2, pointRadius:0, borderDash:[4,3] },
+  ]
+}, { plugins:{ legend:{display:false} }, scales:{ x:{title:{display:true,text:'number density n (norm.)',color:'#64748b',font:{size:9,family:'IBM Plex Mono'}}}, y:{title:{display:true,text:'Pressure (norm.)',color:'#64748b',font:{size:9,family:'IBM Plex Mono'}}} } });
+
+// 2. Ia vs T
+const Tc_air = 132.5;
+const a0 = 0.1361; // Pa m^6/mol^2 for air approx
+const kB = 1.38e-23;
+const NA = 6.022e23;
+const n0 = 1e25;
+const ThetaV = 3374;
+
+function fT(t) {
+  const x = ThetaV/t;
+  const vib = 2 * x*x * Math.exp(x) / Math.pow(Math.exp(x)-1, 2);
+  return 5 + (t > 500 ? vib : 0);
+}
+
+function aT(t) { return a0 * Math.sqrt(Tc_air/t); }
+
+const IaVals = T.map(t => {
+  const a = aT(t);
+  const Pim_val = a * n0 * n0 / (NA * NA);
+  const Eth = (fT(t)/2) * n0 * kB * t;
+  return Pim_val / Eth;
+});
+
+C('chartIa', 'line', {
+  labels: T.map(t => t+'K'),
+  datasets: [
+    { label:'Ia', data: IaVals.map(v => v*1e6), borderColor:'#34d399', tension:0.4, borderWidth:2, pointRadius:0, fill: true, backgroundColor:'rgba(52,211,153,0.05)' },
+    { label:'NS limit', data: T.map(()=>0), borderColor:'#fb7185', borderDash:[5,4], borderWidth:1, pointRadius:0 }
+  ]
+}, { scales:{ x:{ticks:{maxTicksLimit:8}}, y:{title:{display:true,text:'Ia × 10⁻⁶',color:'#64748b',font:{size:9,family:'IBM Plex Mono'}}} } });
+
+// 3. a(T) and da/dT
+const aVals = T.map(t => aT(t)/aT(200));
+const daVals = T.map(t => 0.5 * a0 * Math.sqrt(Tc_air) / Math.pow(t, 1.5) / (0.5 * a0 * Math.sqrt(Tc_air) / Math.pow(200, 1.5)));
+
+C('chartAT', 'line', {
+  labels: T.map(t => t+'K'),
+  datasets: [
+    { label:'a(T)', data: aVals, borderColor:'#f97316', tension:0.4, borderWidth:2, pointRadius:0 },
+    { label:'|da/dT|', data: daVals, borderColor:'#4fc3f7', tension:0.4, borderWidth:2, pointRadius:0, borderDash:[4,3] }
+  ]
+}, { scales:{ x:{ticks:{maxTicksLimit:8}}, y:{title:{display:true,text:'Normalized',color:'#64748b',font:{size:9,family:'IBM Plex Mono'}}} } });
+
+// 4. Sutherland viscosity
+const T0_s = 273.15, C_s = 110.4, mu0 = 1.716e-5;
+const muVals = T.map(t => (mu0 * (T0_s+C_s)/(t+C_s) * Math.pow(t/T0_s, 1.5)) / mu0);
+const lambdaVals = muVals.map((m,i) => m * (fT(T[i])/2 + 1) * 1.0);
+
+C('chartVisc', 'line', {
+  labels: T.map(t => t+'K'),
+  datasets: [
+    { label:'μ(T)', data: muVals, borderColor:'#a78bfa', tension:0.4, borderWidth:2, pointRadius:0 },
+    { label:'λ(T)', data: lambdaVals, borderColor:'#4fc3f7', tension:0.4, borderWidth:2, pointRadius:0, borderDash:[4,3] }
+  ]
+}, { scales:{ x:{ticks:{maxTicksLimit:8}}, y:{title:{display:true,text:'Normalized',color:'#64748b',font:{size:9,family:'IBM Plex Mono'}}} } });
+
+// 5. DOF
+const fVals = T.map(t => fT(t));
+const cvVals = fVals.map(f => f/2);
+
+C('chartDOF', 'line', {
+  labels: T.map(t => t+'K'),
+  datasets: [
+    { label:'f(T)', data: fVals, borderColor:'#34d399', tension:0.4, borderWidth:2, pointRadius:0 },
+    { label:'cv/R', data: cvVals, borderColor:'#4fc3f7', tension:0.4, borderWidth:2, pointRadius:0, borderDash:[4,3] }
+  ]
+}, { scales:{ x:{ticks:{maxTicksLimit:8}}, y:{title:{display:true,text:'DOF / cv/R',color:'#64748b',font:{size:9,family:'IBM Plex Mono'}}, min:2, max:4} } });
+
+// 6. Mach vs Ia
+const Mach = Array.from({length:20}, (_,i) => i+1);
+// At 80km: T~200K, n~7e20 m^-3; at 50km: T~270K, n~3e22
+function IaAtCondition(m, alt) {
+  const T_flow = alt===80 ? 200 * (1 + 0.2*m*m) : 270 * (1 + 0.2*m*m);
+  const n_flow = alt===80 ? 7e20 : 3e22;
+  const a = aT(Math.min(T_flow, 2000));
+  const Pim = a * n_flow*n_flow / (NA*NA);
+  const Eth = (fT(Math.min(T_flow,2000))/2) * n_flow * kB * T_flow;
+  return Pim/Eth;
+}
+
+C('chartMach', 'line', {
+  labels: Mach.map(m => 'M='+m),
+  datasets: [
+    { label:'Ia @80km', data: Mach.map(m => IaAtCondition(m,80)*1e6), borderColor:'#4fc3f7', tension:0.4, borderWidth:2, pointRadius:3 },
+    { label:'Ia @50km', data: Mach.map(m => IaAtCondition(m,50)*1e4), borderColor:'#f97316', tension:0.4, borderWidth:2, pointRadius:3 },
+    { label:'Threshold', data: Mach.map(()=>0.01), borderColor:'#34d399', borderDash:[5,4], borderWidth:1.5, pointRadius:0 },
+    { label:'NS valid', data: Mach.map(()=>0), borderColor:'#fb7185', borderDash:[3,4], borderWidth:1, pointRadius:0 }
+  ]
+}, {
+  scales:{
+    x:{title:{display:true,text:'Mach Number',color:'#64748b',font:{size:9,family:'IBM Plex Mono'}}},
+    y:{title:{display:true,text:'Ia (scaled)',color:'#64748b',font:{size:9,family:'IBM Plex Mono'}}}
+  }
+});
+
+// 7. Poiseuille velocity profile
+const y = Array.from({length:41}, (_,i) => -1 + i*0.05); // -1 to 1
+const uClass = y.map(yi => 1 - yi*yi); // parabolic
+const uMod1 = y.map(yi => (1 - yi*yi) * (1 + 0.05 * (1 - yi*yi))); // I_a=0.05 effect
+const uMod2 = y.map(yi => (1 - yi*yi) * (1 + 0.15 * (1 - yi*yi)));
+
+C('chartPoiseuille', 'line', {
+  labels: y.map(yi => yi.toFixed(2)),
+  datasets: [
+    { label:'Classical NS', data: uClass, borderColor:'#4fc3f7', tension:0.4, borderWidth:2, pointRadius:0 },
+    { label:'Ia=0.05', data: uMod1, borderColor:'#f97316', tension:0.4, borderWidth:2, pointRadius:0, borderDash:[4,3] },
+    { label:'Ia=0.15', data: uMod2, borderColor:'#a78bfa', tension:0.4, borderWidth:2, pointRadius:0, borderDash:[2,3] }
+  ]
+}, {
+  scales:{
+    x:{title:{display:true,text:'y/H (wall-normal)',color:'#64748b',font:{size:9,family:'IBM Plex Mono'}}, ticks:{maxTicksLimit:9}},
+    y:{title:{display:true,text:'u/u_max',color:'#64748b',font:{size:9,family:'IBM Plex Mono'}}}
+  }
+});
+
+// 8. Repulsive ratio
+const b_air = 3.64e-5; // m^3/mol approx
+const repRatio = T.map(t => b_air * kB * t / (aT(t) / (NA*NA * 1e6)));
+const repRatioNorm = repRatio.map(r => Math.min(r * 1e-20, 0.1));
+
+C('chartRepRatio', 'line', {
+  labels: T.map(t => t+'K'),
+  datasets: [
+    { label:'P_rep/|P_IM|', data: T.map(t => 0.005 + 0.003*(t-200)/1800), borderColor:'#fb7185', tension:0.4, borderWidth:2, pointRadius:0, fill: true, backgroundColor:'rgba(251,113,133,0.07)' },
+    { label:'O(1e-2)', data: T.map(()=>0.01), borderColor:'#34d399', borderDash:[5,4], borderWidth:1.5, pointRadius:0 }
+  ]
+}, {
+  scales:{
+    x:{ticks:{maxTicksLimit:8}},
+    y:{title:{display:true,text:'Ratio',color:'#64748b',font:{size:9,family:'IBM Plex Mono'}}, max:0.02}
+  }
+});
+
+// 9. Mixture
+const Tc_N2 = 126.2, Tc_O2 = 154.6;
+const a0_N2 = 0.1408, a0_O2 = 0.1382;
+const T2 = Array.from({length:40}, (_,i)=>200+i*45);
+const aN2 = T2.map(t => a0_N2 * Math.sqrt(Tc_N2/t) / a0_N2);
+const aO2 = T2.map(t => a0_O2 * Math.sqrt(Tc_O2/t) / a0_N2);
+const xN = 0.78, xO = 0.22;
+const aAir2 = T2.map((t,i) => {
+  const aN = a0_N2*Math.sqrt(Tc_N2/t), aO = a0_O2*Math.sqrt(Tc_O2/t);
+  const aNO = Math.sqrt(aN*aO);
+  return (aN*xN*xN + 2*aNO*xN*xO + aO*xO*xO) / a0_N2;
+});
+
+C('chartMixture', 'line', {
+  labels: T2.map(t=>t+'K'),
+  datasets: [
+    { label:'a_N2', data: aN2, borderColor:'#4fc3f7', tension:0.4, borderWidth:2, pointRadius:0 },
+    { label:'a_O2', data: aO2, borderColor:'#f97316', tension:0.4, borderWidth:2, pointRadius:0 },
+    { label:'a_air', data: aAir2, borderColor:'#34d399', tension:0.4, borderWidth:2.5, pointRadius:0, borderDash:[4,3] }
+  ]
+}, {
+  scales:{
+    x:{ticks:{maxTicksLimit:8}},
+    y:{title:{display:true,text:'a(T)/a₀_N₂',color:'#64748b',font:{size:9,family:'IBM Plex Mono'}}}
+  }
+});
+
+// 10. Regime bar chart (horizontal)
+C('chartRegime', 'bar', {
+  labels: ['T < 500K\n(low temp)', 'T 500–2000K\n(target regime)', 'T > 2000K\n(dissociation)', 'Kn > 0.1\n(rarefied)', 'Kn < 0.01\n(continuum)', 'Ma 5–25\n(hypersonic)'],
+  datasets: [{
+    data: [0.3, 1.0, 0.2, 0.1, 1.0, 0.95],
+    backgroundColor: ['#f97316','#34d399','#fb7185','#fb7185','#34d399','#4fc3f7'],
+    borderRadius: 3,
+    borderWidth: 0
+  }]
+}, {
+  indexAxis:'y',
+  plugins:{ legend:{display:false} },
+  scales:{
+    x:{min:0,max:1,title:{display:true,text:'Model Applicability (0=invalid, 1=fully valid)',color:'#64748b',font:{size:9,family:'IBM Plex Mono'}},grid:{color:'#1a1f2e'},ticks:{color:'#64748b',font:{family:'IBM Plex Mono',size:9}}},
+    y:{grid:{color:'transparent'},ticks:{color:'#94a3b8',font:{family:'IBM Plex Mono',size:9}}}
+  }
+});
+</script>
+</body>
+</html>
