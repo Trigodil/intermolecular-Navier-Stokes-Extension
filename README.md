@@ -1,5 +1,4 @@
 # intermolecular-Navier-Stokes-Extension
-# Intermolecular Navier–Stokes Extension
 
 > Intermolecular activity-based extension of Navier–Stokes equations for hypersonic continuum flow.
 > **Pre-publication draft — shared for review only.**
@@ -21,7 +20,7 @@ This repository contains a **preliminary research manuscript**.
 ## Contents
 
 - `intermolecular_ns_extension.pdf` — Full manuscript (pre-publication draft)  
-- `interactive_validation.html` — Interactive visualization of model behavior  
+- `ns_model_viz` — Interactive visualization of model behavior  
 
 ## Overview
 
@@ -66,7 +65,7 @@ All results show:
 ├── README.md
 ├── LICENSE
 ├── paper.pdf
-└── visualization.html
+└── ns_model_viz.html
 ```
 
 ---
