@@ -21,7 +21,7 @@ This repository contains a **preliminary research manuscript**.
 
 - `intermolecular_ns_extension.pdf` — Full manuscript (pre-publication draft)  
 - `ns_model_viz` — Interactive visualization of model behavior
--  `Stress Test Sandbox.zip`-Equation stress test sanbox for reviewers
+-  `Stress Test Sandbox.zip`-Equation stress test sandbox for reviewers
 
 ## Overview
 
