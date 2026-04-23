@@ -20,7 +20,8 @@ This repository contains a **preliminary research manuscript**.
 ## Contents
 
 - `intermolecular_ns_extension.pdf` — Full manuscript (pre-publication draft)  
-- `ns_model_viz` — Interactive visualization of model behavior  
+- `ns_model_viz` — Interactive visualization of model behavior
+-  `Stress Test Sandbox.zip`-Equation stress test sanbox for reviewers
 
 ## Overview
 
@@ -30,6 +31,8 @@ Author Statement
 
 All theoretical development, derivations, and modeling presented in this manuscript are original work by the author. Any computational or writing tools used did not contribute to the scientific reasoning or results.
 
+Update: I have uploaded a script Stress testing the equation against imaginary physics and at universal scale, reviewers may use it to chack validation and stress test the equations but the script must not be replicated or reused for other academic purposes, The sandbox script and values are in the assumption of the current scope of the model, it is not a representative scale.
+
 Key elements:
 
 * Pressure decomposition:
@@ -37,6 +40,7 @@ Key elements:
 * Van der Waals attractive term with Redlich–Kwong temperature scaling
 * Fully coupled density and temperature gradient contributions
 * No empirical parameters in final formulation (uses published constants)
+* A value sandbox to stress test
 
 A new dimensionless parameter is defined:
 
@@ -69,7 +73,8 @@ All results show:
 ├── README.md
 ├── LICENSE
 ├── intermolecular_ns_extension.pdf
-└── ns_model_viz.html
+├── ns_model_viz.html
+└── Stress Test Sandbox.zip
 ```
 
 ---
