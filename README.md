@@ -31,7 +31,7 @@ Author Statement
 
 All theoretical development, derivations, and modeling presented in this manuscript are original work by the author. Any computational or writing tools used did not contribute to the scientific reasoning or results.
 
-Update: I have uploaded a script Stress testing the equation against imaginary physics and at universal scale, reviewers may use it to chack validation and stress test the equations but the script must not be replicated or reused for other purposes, The sandbox script and values are in the assumption of the current scope of the model, it is not a representative scale.
+Update: I have uploaded a script Stress testing the equation against imaginary physics and at universal scale, reviewers may use it to chack validation and stress test the equations but the scripts must not be replicated or reused for other purposes, The sandbox script and values are in the assumption of the current scope of the model, it is not a representative scale.
 
 Key elements:
 
