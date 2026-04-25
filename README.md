@@ -114,7 +114,7 @@ Generates 10 individual 600 DPI plots per planet saved to `ns_plots_{planet}/`.
 
 ---
 
-## Stress Test Sandbox (`Stress_Test_Sandbox.zip`)
+## Stress Test Sandbox (`Eq_Stress_Test`)
 
 Two scripts testing numerical robustness of $I_a$ under pathological inputs:
 
