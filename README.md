@@ -87,7 +87,6 @@ Features:
 - Real-time $I_a$, $f_\mathrm{mix}(T)$, $P_\mathrm{IM}(r,T)$, dissociation $\alpha(T)$, and re-entry trajectory graphs
 - Interactive console (⚡ CONSOLE button) with live computation output
 - Validation report panel against NASA reference data at every query point
-- Dark / light theme toggle
 
 ---
 
