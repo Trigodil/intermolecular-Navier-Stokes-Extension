@@ -22,7 +22,6 @@ This repository contains a preliminary research manuscript submitted to the **AI
 | `intermolecular_ns_extension.pdf` | Full manuscript (pre-publication draft) |
 | `ns_extended.html` | Interactive browser-based analysis tool |
 | `Aero_Tools.zip` | Python CLI tool, physics library, planet selector |
-| `Stress_Test_Sandbox.zip` | Mathematical robustness stress tests |
 | `LICENSE` | All rights reserved |
 
 ---
