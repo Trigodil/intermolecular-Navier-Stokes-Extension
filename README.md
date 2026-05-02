@@ -1,4 +1,4 @@
-# Intermolecular Activity-Based Extension of Navier–Stokes for Hypersonic Continuum Flow
+# Navier-Stokes unified framework for hypersonic flow
 
 **Ayush Sreejith** — Independent Researcher, Palakkad, Kerala, India  
 *Pre-publication draft — shared for technical review only*
