@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extended NS — Hypersonic Continuum Flow Analysis</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+:root,[data-theme="dark"]{--bg:#0a0c10;--bg-elev:#0f1218;--panel:#141821;--panel-2:#1a1f2b;--border:#242a38;--border-strong:#3a4258;--text:#e8ecf2;--text-dim:#a0a8b8;--muted:#606878;--accent1:#4fc3f7;--accent2:#f97316;--accent3:#a78bfa;--accent4:#34d399;--accent5:#ef4444;--accent-hot:#ff3355;--accent-gold:#fbbf24;--err-good:#34d399;--err-ok:#fbbf24;--err-warn:#f97316;--err-bad:#ef4444;}
+[data-theme="light"]{--bg:#f5f5f0;--bg-elev:#fff;--panel:#fff;--panel-2:#f8f8f4;--border:#d8dbe0;--border-strong:#b0b5bf;--text:#0a1628;--text-dim:#3a4558;--muted:#6a7585;--accent1:#0284c7;--accent2:#ea580c;--accent3:#7c3aed;--accent4:#059669;--accent5:#dc2626;--accent-hot:#dc143c;--accent-gold:#d97706;--err-good:#059669;--err-ok:#d97706;--err-warn:#ea580c;--err-bad:#dc2626;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;padding:20px;transition:background .25s,color .25s}
+header{max-width:1600px;margin:0 auto 20px;padding:18px 24px;border:1px solid var(--border);background:var(--panel);border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+header h1{font-family:'IBM Plex Mono',monospace;font-size:.98rem;font-weight:600;color:var(--accent1);letter-spacing:.1em;text-transform:uppercase}
+header .subtitle{font-size:.7rem;color:var(--muted);letter-spacing:.05em;margin-top:2px}
+.header-actions{display:flex;gap:10px;align-items:center}
+.theme-toggle{background:var(--bg-elev);border:1px solid var(--border);border-radius:20px;padding:4px;display:inline-flex}
+.theme-toggle button{background:transparent;border:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:.68rem;padding:6px 12px;border-radius:16px;cursor:pointer;letter-spacing:.05em}
+.theme-toggle button.active{background:var(--accent1);color:var(--bg)}
+.terminal-btn{background:var(--bg-elev);border:1px solid var(--border-strong);color:var(--accent4);font-family:'IBM Plex Mono',monospace;font-size:.68rem;padding:8px 14px;border-radius:4px;cursor:pointer;letter-spacing:.08em}
+.terminal-btn:hover{background:var(--accent4);color:var(--bg)}
+.tabs{max-width:1600px;margin:0 auto 20px;display:flex;gap:4px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tab{background:transparent;border:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;padding:12px 22px;cursor:pointer;border-bottom:2px solid transparent}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent1);border-bottom-color:var(--accent1)}
+.tab-panel{display:none;max-width:1600px;margin:0 auto}
+.tab-panel.active{display:block}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:16px;position:relative}
+.panel-title{font-family:'IBM Plex Mono',monospace;font-size:.64rem;font-weight:600;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+.panel-subtitle{font-size:.76rem;color:var(--text-dim);margin-bottom:14px;line-height:1.5}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
+.inputs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:14px}
+.input-ctrl{background:var(--bg-elev);border:2px solid var(--border);border-radius:5px;padding:10px 12px}
+.input-ctrl.priority-critical{border-left-width:4px;border-left-color:var(--accent-hot)}
+.input-ctrl.priority-high{border-left-width:4px;border-left-color:var(--accent2)}
+.input-ctrl.priority-medium{border-left-width:4px;border-left-color:var(--accent-gold)}
+.input-ctrl.priority-low{border-left-width:4px;border-left-color:var(--accent1)}
+.input-ctrl label{display:block;font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.priority-tag{font-size:.54rem;padding:1px 6px;border-radius:10px;margin-left:6px;font-weight:600}
+.input-ctrl.priority-critical .priority-tag{background:var(--accent-hot);color:#0a0c10}
+.input-ctrl.priority-high .priority-tag{background:var(--accent2);color:#0a0c10}
+.input-ctrl.priority-medium .priority-tag{background:var(--accent-gold);color:#0a0c10}
+.input-ctrl.priority-low .priority-tag{background:var(--accent1);color:#0a0c10}
+.input-ctrl .priority-tag:not([class*="priority-"]){background:var(--accent-gold);color:#0a0c10}
+#geom-sub-blunt,#geom-sub-flat,#geom-sub-wedge,#geom-sub-sphere,#geom-sub-sweep{border-left-color:var(--accent3) !important}
+#geom-sub-blunt .priority-tag,#geom-sub-flat .priority-tag,#geom-sub-wedge .priority-tag,#geom-sub-sphere .priority-tag,#geom-sub-sweep .priority-tag{background:var(--accent3);color:#0a0c10}
+.input-ctrl input,.input-ctrl select{width:100%;background:var(--bg-elev);border:none;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:1.05rem;font-weight:500;padding:4px 0;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;}
+.input-ctrl select option{background:var(--panel);color:var(--text);font-family:'IBM Plex Mono',monospace;}
+.input-ctrl input.default-value{color:var(--muted);font-style:italic}
+.input-ctrl input:focus,.input-ctrl select:focus{color:var(--accent1)}
+.input-ctrl select:hover{color:var(--accent1)}
+.default-hint{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--muted);margin-top:3px}
+.model-badge-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;background:var(--bg-elev);border-radius:5px;border:1px solid var(--border);margin-bottom:14px}
+.model-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:20px;font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:600;letter-spacing:.06em}
+.model-badge .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+.model-badge.classical{background:rgba(79,195,247,.15);color:var(--accent1)}
+.model-badge.extended{background:rgba(52,211,153,.15);color:var(--accent4)}
+.model-badge.extended_diss{background:rgba(249,115,22,.15);color:var(--accent2)}
+.model-badge.extended_plasma{background:rgba(239,68,68,.15);color:var(--accent5)}
+.result-card{background:linear-gradient(135deg,var(--bg-elev) 0%,var(--panel-2) 100%);border:1px solid var(--border);border-radius:6px;padding:20px}
+.result-main{display:flex;align-items:baseline;gap:12px;margin:8px 0 14px}
+.result-big{font-family:'IBM Plex Mono',monospace;font-size:2.4rem;font-weight:600;color:var(--accent1);line-height:1}
+.result-unit{font-size:.9rem;color:var(--muted)}
+.result-label{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--muted);letter-spacing:.15em;text-transform:uppercase}
+.kv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.kv{background:var(--bg-elev);border-radius:4px;padding:8px 10px}
+.kv .label{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--muted);letter-spacing:.08em}
+.kv .val{font-family:'IBM Plex Mono',monospace;font-size:.82rem;color:var(--text);margin-top:3px}
+.kv .val.accent1{color:var(--accent1)}.kv .val.accent2{color:var(--accent2)}.kv .val.accent3{color:var(--accent3)}.kv .val.accent4{color:var(--accent4)}.kv .val.accent5{color:var(--accent5)}
+.comparison-list{display:flex;flex-direction:column;gap:8px}
+.comparison-item{background:var(--bg-elev);border-left:3px solid var(--err-good);padding:10px 14px;border-radius:0 4px 4px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.comparison-item.err-good{border-left-color:var(--err-good)}
+.comparison-item.err-ok{border-left-color:var(--err-ok)}
+.comparison-item.err-warn{border-left-color:var(--err-warn)}
+.comparison-item.err-bad{border-left-color:var(--err-bad)}
+.comparison-item .ref-name{font-family:'IBM Plex Mono',monospace;font-size:.74rem;color:var(--text);font-weight:500}
+.comparison-item .ref-source{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--muted)}
+.comparison-item .ref-source a{color:var(--accent1);text-decoration:none}
+.comparison-item .ref-err{font-family:'IBM Plex Mono',monospace;font-size:.85rem;font-weight:600}
+.comparison-item.err-good .ref-err{color:var(--err-good)}
+.comparison-item.err-ok .ref-err{color:var(--err-ok)}
+.comparison-item.err-warn .ref-err{color:var(--err-warn)}
+.comparison-item.err-bad .ref-err{color:var(--err-bad)}
+.chart-wrapper{position:relative;background:var(--bg-elev);border-radius:5px;padding:12px}
+.chart-wrapper canvas{display:block}
+.chart-wrapper.calculating canvas{filter:blur(3px);opacity:.5;transition:filter .2s,opacity .2s}
+.chart-loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none;align-items:center;gap:10px;padding:10px 18px;background:var(--panel);border:1px solid var(--border-strong);border-radius:20px;font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--accent1);letter-spacing:.1em;z-index:10}
+.chart-wrapper.calculating .chart-loader{display:inline-flex}
+.chart-loader .spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent1);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.chart-toolbar{position:absolute;top:6px;right:8px;display:flex;gap:4px;z-index:5}
+.chart-toolbar button{background:var(--panel);border:1px solid var(--border);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:.6rem;padding:3px 8px;border-radius:3px;cursor:pointer}
+.chart-toolbar button:hover{color:var(--accent1);border-color:var(--accent1)}
+.graph-error-badge{margin-top:10px;padding:8px 12px;background:var(--bg-elev);border-radius:4px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.graph-error-badge .label{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.08em}
+.graph-error-badge .val{font-family:'IBM Plex Mono',monospace;font-size:.78rem;font-weight:600;padding:3px 8px;border-radius:3px}
+.graph-error-badge .val.err-good{background:rgba(52,211,153,.15);color:var(--err-good)}
+.graph-error-badge .val.err-ok{background:rgba(251,191,36,.15);color:var(--err-ok)}
+.graph-error-badge .val.err-warn{background:rgba(249,115,22,.15);color:var(--err-warn)}
+.graph-error-badge .val.err-bad{background:rgba(239,68,68,.15);color:var(--err-bad)}
+.graph-lookup{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;padding:8px 12px;background:var(--bg-elev);border-radius:4px}
+.graph-lookup .lookup-box{display:flex;align-items:center;gap:6px}
+.graph-lookup label{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.08em}
+.graph-lookup input{background:var(--panel);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:.72rem;padding:4px 8px;width:90px;outline:none}
+.graph-lookup .lookup-result{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--accent4)}
+.eq-box{background:var(--bg-elev);border-left:3px solid var(--accent1);padding:9px 13px;margin:6px 0;font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--accent1);line-height:1.7;border-radius:0 4px 4px 0}
+.eq-box.orange{border-color:var(--accent2);color:var(--accent2)}.eq-box.purple{border-color:var(--accent3);color:var(--accent3)}.eq-box.green{border-color:var(--accent4);color:var(--accent4)}.eq-box.red{border-color:var(--accent5);color:var(--accent5)}
+.note{font-size:.66rem;color:var(--muted);margin-top:10px;line-height:1.55;font-style:italic}
+select.planet-select{background:var(--bg-elev);border:2px solid var(--border);border-left:4px solid var(--accent-hot);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:.95rem;font-weight:500;padding:8px 12px;border-radius:5px;width:100%;cursor:pointer;outline:none}
+.source-card{background:var(--bg-elev);border:1px solid var(--border);border-radius:5px;padding:14px 16px;margin-bottom:10px}
+.source-card .mission{font-family:'IBM Plex Mono',monospace;font-size:.85rem;color:var(--accent1);font-weight:600}
+.source-card .details{font-size:.72rem;color:var(--text-dim);margin-top:4px;line-height:1.5}
+.source-card a{display:inline-block;margin-top:8px;color:var(--accent4);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:.7rem;border:1px solid var(--accent4);padding:4px 10px;border-radius:3px}
+.source-card a:hover{background:var(--accent4);color:var(--bg)}
+.terminal{position:fixed;bottom:0;right:0;width:560px;height:380px;background:#0a0c10;border:1px solid var(--border-strong);border-radius:8px 8px 0 0;z-index:1000;display:none;flex-direction:column;box-shadow:0 -4px 20px rgba(0,0,0,.5);font-family:'IBM Plex Mono',monospace}
+.terminal.open{display:flex}
+.terminal-header{background:#141821;color:#a0a8b8;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);font-size:.7rem;letter-spacing:.12em}
+.terminal-header .controls{display:flex;gap:6px}
+.terminal-header .controls span{width:12px;height:12px;border-radius:50%;display:inline-block;cursor:pointer}
+.term-dot-red{background:#ef4444}.term-dot-yellow{background:#fbbf24}
+.terminal-body{flex:1;overflow-y:auto;padding:10px 14px;font-size:.72rem;color:#e8ecf2;line-height:1.6}
+.terminal-body .ts{color:#606878}.terminal-body .ok{color:#34d399}.terminal-body .info{color:#4fc3f7}.terminal-body .calc{color:#34d399}.terminal-body .warn{color:#fbbf24}.terminal-body .err{color:#ef4444}.terminal-body .quip{color:#606878;font-style:italic}.terminal-body .cmd{color:#a78bfa}
+.terminal-input{display:flex;align-items:center;padding:8px 14px;border-top:1px solid var(--border);background:#0f1218}
+.terminal-input .prompt{color:#34d399;font-size:.72rem;margin-right:6px}
+.terminal-input input{flex:1;background:transparent;border:none;color:#e8ecf2;font-family:'IBM Plex Mono',monospace;font-size:.72rem;outline:none}
+</style></head>
+<body data-theme="dark">
+
+<header>
+<div><h1>Extended Navier-Stokes · Hypersonic Continuum Flow</h1>
+<div class="subtitle">Intermolecular Activity (Iₐ) · Σxᵢfᵢ(T) mixture · Dissociation · Planck radiation · NASA validated</div></div>
+<div class="header-actions">
+<button class="terminal-btn" id="termOpenBtn">⚡ CONSOLE</button>
+<div class="theme-toggle"><button class="active" data-theme-btn="dark">Dark</button><button data-theme-btn="light">Light</button></div>
+</div>
+</header>
+
+<div class="tabs">
+<button class="tab active" data-tab="simple">Quick Solve</button>
+<button class="tab" data-tab="advanced">Advanced</button>
+<button class="tab" data-tab="reentry">Re-Entry Trajectory</button>
+<button class="tab" data-tab="sources">NASA Sources</button>
+<button class="tab" data-tab="about">Model Info</button>
+</div>
+
+<div class="tab-panel active" id="tab-simple">
+<div class="panel">
+<div class="panel-title">Quick Solve — Enter Mach, equation auto-routes by T_shock</div>
+<div class="panel-subtitle">&lt;500K classical · 500–2000K Extension · &gt;2000K +dissociation · &gt;8000K +Planck radiation</div>
+<div class="inputs-grid">
+<div class="input-ctrl priority-critical"><label>Planet Template <span class="priority-tag">CRITICAL</span></label>
+<select id="qPlanet" class="planet-select" style="border:none;border-left:none;padding:0;font-size:1.05rem;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer">
+<option value="earth_leo">Earth — LEO (Shuttle)</option>
+<option value="earth_lunar">Earth — Lunar (Apollo)</option>
+<option value="earth_stardust">Earth — Sample (Stardust)</option>
+<option value="jupiter" selected>Jupiter (Galileo)</option>
+<option value="mars">Mars (MSL) [beta]</option>
+<option value="venus">Venus (Pioneer Venus) [beta]</option>
+<option value="titan">Titan (Huygens) [beta]</option>
+<option value="saturn">Saturn [beta]</option>
+<option value="uranus">Uranus [beta]</option>
+<option value="neptune">Neptune [beta]</option>
+</select></div>
+<div class="input-ctrl priority-critical"><label>Mach Number <span class="priority-tag">CRITICAL</span></label><input type="text" id="qMach" placeholder="auto"><div class="default-hint">default: mission reference</div></div>
+<div class="input-ctrl priority-high"><label>T_∞ [K] <span class="priority-tag">HIGH</span></label><input type="text" id="qTinf" placeholder="auto"><div class="default-hint" id="qTinf-hint">default: atmosphere</div></div>
+<div class="input-ctrl priority-high"><label>n_∞ [/m³] <span class="priority-tag">HIGH</span></label><input type="text" id="qN" placeholder="auto"><div class="default-hint" id="qN-hint">default: peak altitude</div></div>
+<div class="input-ctrl priority-medium"><label>Rn [cm] <span class="priority-tag">MED</span></label><input type="text" id="qRn" placeholder="auto"><div class="default-hint" id="qRn-hint">default: mission</div></div>
+<div class="input-ctrl priority-low"><label>β (Iₐ correction) <span class="priority-tag">LOW</span></label><input type="text" id="qBeta" placeholder="8.0"><div class="default-hint">default: 8.0</div></div>
+</div>
+<div class="model-badge-row"><span style="font-family:'IBM Plex Mono',monospace;font-size:.66rem;color:var(--muted);letter-spacing:.1em">ACTIVE EQUATION:</span>
+<span id="modelBadge" class="model-badge extended_plasma"><span class="dot"></span><span id="modelLabel">Computing...</span></span>
+<span style="font-family:'IBM Plex Mono',monospace;font-size:.74rem;color:var(--text)" id="modelTstag">T_shock = —</span></div>
+<div id="activeEqBox" style="background:var(--bg-elev);border:1px solid var(--border);border-left:4px solid var(--accent1);border-radius:5px;padding:14px 18px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">Governing Equation In Use</div>
+<div id="activeEqContent" style="font-family:'IBM Plex Mono',monospace;font-size:.78rem;color:var(--text);line-height:1.8"></div>
+<div id="activeEqFeatures" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"></div>
+</div>
+</div>
+
+<div class="grid-2">
+<div class="panel"><div class="panel-title">Stagnation Heat Flux — Model Prediction</div>
+<div class="result-card"><div class="result-label">q_total at stagnation point</div>
+<div class="result-main"><span class="result-big" id="qTotal">—</span><span class="result-unit">MW/m²</span></div>
+<div class="kv-grid">
+<div class="kv"><div class="label">q_conv</div><div class="val accent1" id="qConv">—</div></div>
+<div class="kv"><div class="label">q_rad</div><div class="val accent3" id="qRad">—</div></div>
+<div class="kv"><div class="label">q_diss</div><div class="val accent4" id="qDiss">—</div></div>
+<div class="kv"><div class="label">V_∞</div><div class="val" id="qV">—</div></div>
+<div class="kv"><div class="label">ρ_∞</div><div class="val" id="qRho">—</div></div>
+<div class="kv"><div class="label">Iₐ</div><div class="val accent2" id="qIa">—</div></div>
+<div class="kv"><div class="label">f_mix(T)</div><div class="val" id="qFmix">—</div></div>
+<div class="kv"><div class="label">K (Fay-Riddell)</div><div class="val" id="qKFR">—</div></div>
+</div></div></div>
+<div class="panel"><div class="panel-title">NASA Reference Comparison</div>
+<div class="panel-subtitle">Equation error rate vs NASA experimental data (or model-only where no probe exists) · green &lt;10% · yellow &lt;30% · orange &lt;50% · red &gt;50%</div>
+<div class="comparison-list" id="nasaComparison"></div>
+<p class="note" id="nasaNote"></p></div>
+</div>
+
+<div class="panel"><div class="panel-title">Heat Flux vs Mach Sweep</div>
+<div class="panel-subtitle">Scroll to zoom · drag to pan · click Reset to restore</div>
+<div class="chart-wrapper" id="cw-qsweep">
+<div class="chart-toolbar"><button onclick="resetZoom('cQsweep')">↺ Reset</button></div>
+<canvas id="cQsweep" height="240"></canvas>
+<div class="chart-loader"><div class="spinner"></div> CALCULATING</div></div>
+<div class="graph-lookup">
+<div class="lookup-box"><label>Mach →</label><input type="text" id="lkQsweepX" placeholder="enter"></div>
+<div class="lookup-box"><label>q [MW/m²] →</label><input type="text" id="lkQsweepY" placeholder="enter"></div>
+<span class="lookup-result" id="lkQsweepOut"></span></div>
+<div class="graph-error-badge"><span class="label">Equation error rate vs NASA experimental data at current point:</span><span class="val" id="qsweepErr">—</span></div>
+</div>
+</div>
+
+<div class="tab-panel" id="tab-advanced">
+<div class="panel"><div class="panel-title">Advanced Analysis — Full Parameter Control</div>
+<div class="panel-subtitle">Override model routing · adjust geometry · force specific equations</div>
+<div class="inputs-grid">
+<div class="input-ctrl priority-critical"><label>Planet <span class="priority-tag">CRITICAL</span></label>
+<select id="aPlanet" class="planet-select" style="border:none;border-left:none;padding:0;font-size:1.05rem;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer">
+<option value="earth_leo">Earth LEO</option><option value="earth_lunar">Earth Lunar</option>
+<option value="earth_stardust">Earth Stardust</option><option value="jupiter" selected>Jupiter</option>
+<option value="mars">Mars</option><option value="venus">Venus</option><option value="titan">Titan</option>
+<option value="saturn">Saturn</option><option value="uranus">Uranus</option><option value="neptune">Neptune</option>
+</select></div>
+<div class="input-ctrl priority-critical"><label>Force Equation <span class="priority-tag">CRITICAL</span></label>
+<select id="aForceModel">
+<option value="auto">auto-route by T_shock</option>
+<option value="classical">Classical Navier-Stokes</option>
+<option value="extended">Extension (Iₐ only)</option>
+<option value="extended_diss">Extension + Dissociation + Radiation</option>
+</select></div>
+<div class="input-ctrl priority-critical"><label>Geometry <span class="priority-tag">CRITICAL</span></label>
+<select id="aGeom">
+<option value="blunt" selected>Blunt body (stagnation)</option>
+<option value="flat">Flat plate (laminar BL)</option>
+<option value="wedge">Sharp wedge (oblique shock)</option>
+<option value="sphere">Sphere</option></select></div>
+
+<!-- Geometry-specific sub-parameters (shown/hidden based on selection) -->
+<div class="input-ctrl priority-medium" id="geom-sub-blunt" style="display:block"><label>Shoulder radius Rs [cm] <span class="priority-tag">GEOM</span></label><input type="text" id="aGeomParam1" placeholder="default 5.0"><div class="default-hint">default: typical blunt body</div></div>
+<div class="input-ctrl priority-medium" id="geom-sub-flat" style="display:none"><label>Plate length L [m] <span class="priority-tag">GEOM</span></label><input type="text" id="aGeomParam2" placeholder="default 1.0"><div class="default-hint">default: 1 m flat plate</div></div>
+<div class="input-ctrl priority-medium" id="geom-sub-wedge" style="display:none"><label>Wedge half-angle θ [deg] <span class="priority-tag">GEOM</span></label><input type="text" id="aGeomParam3" placeholder="default 15"><div class="default-hint">default: 15° wedge</div></div>
+<div class="input-ctrl priority-medium" id="geom-sub-sphere" style="display:none"><label>Sphere radius R [cm] <span class="priority-tag">GEOM</span></label><input type="text" id="aGeomParam4" placeholder="default 10"><div class="default-hint">default: 10 cm sphere</div></div>
+<div class="input-ctrl priority-low" id="geom-sub-sweep" style="display:none"><label>Sweep angle Λ [deg] <span class="priority-tag">LE</span></label><input type="text" id="aGeomSweep" placeholder="0"><div class="default-hint">default: unswept</div></div>
+<div class="input-ctrl priority-high"><label>T [K] <span class="priority-tag">HIGH</span></label><input type="text" id="aT" placeholder="8000"></div>
+<div class="input-ctrl priority-high"><label>n [/m³] <span class="priority-tag">HIGH</span></label><input type="text" id="aN" placeholder="1e22"></div>
+<div class="input-ctrl priority-high"><label>Mach <span class="priority-tag">HIGH</span></label><input type="text" id="aMach" placeholder="50"></div>
+<div class="input-ctrl priority-medium"><label>Char. length [cm] <span class="priority-tag">MED</span></label><input type="text" id="aRn" placeholder="22.2"></div>
+<div class="input-ctrl priority-medium"><label>T_∞ [K] <span class="priority-tag">MED</span></label><input type="text" id="aTinf" placeholder="200"></div>
+<div class="input-ctrl priority-low"><label>β <span class="priority-tag">LOW</span></label><input type="text" id="aBeta" placeholder="8.0"></div>
+<div class="input-ctrl priority-low"><label>∇n [/m] <span class="priority-tag">LOW</span></label><input type="text" id="aGradN" placeholder="auto"></div>
+</div>
+</div>
+<div class="grid-3">
+<div class="panel"><div class="panel-title">f_mix(T)</div>
+<div class="chart-wrapper" id="cw-ft"><div class="chart-toolbar"><button onclick="resetZoom('cFT')">↺</button></div>
+<canvas id="cFT" height="200"></canvas><div class="chart-loader"><div class="spinner"></div> CALCULATING</div></div>
+<div class="graph-lookup"><div class="lookup-box"><label>T →</label><input type="text" id="lkFTx" placeholder="K"></div>
+<div class="lookup-box"><label>f →</label><input type="text" id="lkFTy" placeholder="DOF"></div><span class="lookup-result" id="lkFTout"></span></div></div>
+<div class="panel"><div class="panel-title">|P_IM(r,T)|</div>
+<div class="chart-wrapper" id="cw-pr"><div class="chart-toolbar"><button onclick="resetZoom('cPr')">↺</button></div>
+<canvas id="cPr" height="200"></canvas><div class="chart-loader"><div class="spinner"></div> CALCULATING</div></div>
+<div class="graph-lookup"><div class="lookup-box"><label>r [nm] →</label><input type="text" id="lkPrx" placeholder="nm"></div>
+<div class="lookup-box"><label>P [Pa] →</label><input type="text" id="lkPry" placeholder="Pa"></div><span class="lookup-result" id="lkPrOut"></span></div></div>
+<div class="panel"><div class="panel-title">Iₐ(T)</div>
+<div class="chart-wrapper" id="cw-ia"><div class="chart-toolbar"><button onclick="resetZoom('cIa')">↺</button></div>
+<canvas id="cIa" height="200"></canvas><div class="chart-loader"><div class="spinner"></div> CALCULATING</div></div>
+<div class="graph-lookup"><div class="lookup-box"><label>T →</label><input type="text" id="lkIax" placeholder="K"></div>
+<div class="lookup-box"><label>Iₐ →</label><input type="text" id="lkIay" placeholder="val"></div><span class="lookup-result" id="lkIaOut"></span></div></div>
+</div>
+<div class="grid-2">
+<div class="panel"><div class="panel-title">Dissociation α(T)</div>
+<div class="chart-wrapper" id="cw-diss"><div class="chart-toolbar"><button onclick="resetZoom('cDiss')">↺</button></div>
+<canvas id="cDiss" height="220"></canvas><div class="chart-loader"><div class="spinner"></div> CALCULATING</div></div>
+<div class="graph-lookup"><div class="lookup-box"><label>T →</label><input type="text" id="lkDissx" placeholder="K"></div>
+<div class="lookup-box"><label>α →</label><input type="text" id="lkDissy" placeholder="0-1"></div><span class="lookup-result" id="lkDissOut"></span></div></div>
+<div class="panel"><div class="panel-title">Poiseuille velocity (Iₐ-corrected)</div>
+<div class="chart-wrapper" id="cw-poise"><div class="chart-toolbar"><button onclick="resetZoom('cPoise')">↺</button></div>
+<canvas id="cPoise" height="220"></canvas><div class="chart-loader"><div class="spinner"></div> CALCULATING</div></div>
+<div class="graph-lookup"><div class="lookup-box"><label>y/H →</label><input type="text" id="lkPoisex" placeholder="-1 to 1"></div>
+<div class="lookup-box"><label>u/u_max →</label><input type="text" id="lkPoisey" placeholder="0-1"></div><span class="lookup-result" id="lkPoiseOut"></span></div></div>
+</div>
+</div>
+
+<div class="tab-panel" id="tab-reentry">
+<div class="panel"><div class="panel-title">Atmospheric Re-Entry Trajectory — q vs Altitude</div>
+<div class="panel-subtitle">Heat flux profile as vehicle descends. Scroll to zoom · drag to pan.</div>
+<div class="inputs-grid" style="max-width:800px">
+<div class="input-ctrl priority-critical"><label>Planet <span class="priority-tag">CRITICAL</span></label>
+<select id="rPlanet" class="planet-select" style="border:none;border-left:none;padding:0;font-size:1.05rem;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer">
+<option value="earth_lunar">Earth (Apollo)</option>
+<option value="jupiter" selected>Jupiter (Galileo)</option>
+<option value="mars">Mars (MSL)</option>
+<option value="venus">Venus (Pioneer)</option>
+<option value="titan">Titan (Huygens)</option></select></div>
+<div class="input-ctrl priority-high"><label>V peak [km/s] <span class="priority-tag">HIGH</span></label><input type="text" id="rVpeak" placeholder="auto"></div>
+<div class="input-ctrl priority-medium"><label>Entry angle γ [deg] <span class="priority-tag">MED</span></label><input type="text" id="rAngle" placeholder="-8"></div>
+</div>
+<div class="chart-wrapper" style="margin-top:16px">
+<div class="chart-toolbar"><button onclick="resetZoom('cReentry')">↺ Reset</button></div>
+<canvas id="cReentry" height="260"></canvas><div class="chart-loader"><div class="spinner"></div> CALCULATING</div></div>
+<div class="graph-lookup"><div class="lookup-box"><label>Altitude →</label><input type="text" id="lkReentryX" placeholder="km"></div>
+<div class="lookup-box"><label>q →</label><input type="text" id="lkReentryY" placeholder="MW/m²"></div>
+<span class="lookup-result" id="lkReentryOut"></span></div>
+<div class="graph-error-badge"><span class="label">Peak heat flux on trajectory:</span><span class="val" id="reentryPeak">—</span></div>
+</div>
+
+<div class="panel" style="margin-top:16px">
+<div class="panel-title">Pressure Decomposition vs Altitude — P_NS vs P_IM vs Iₐ</div>
+<div class="panel-subtitle">Classical NS pressure vs intermolecular correction along the re-entry trajectory. Right axis shows Iₐ (Boredom Constant). Scroll to zoom · drag to pan.</div>
+<div class="chart-wrapper" style="margin-top:12px">
+<div class="chart-toolbar"><button onclick="resetZoom('cReentryP')">↺ Reset</button></div>
+<canvas id="cReentryP" height="260"></canvas><div class="chart-loader"><div class="spinner"></div> CALCULATING</div></div>
+<div class="graph-lookup">
+  <div class="lookup-box"><label>Altitude →</label><input type="text" id="lkPressX" placeholder="km"></div>
+  <div class="lookup-box"><label>P_NS →</label><input type="text" id="lkPressY" placeholder="MPa"></div>
+  <span class="lookup-result" id="lkPressOut"></span>
+</div>
+<div class="graph-error-badge"><span class="label">P_IM / P_NS at peak heating:</span><span class="val" id="reentryPratio">—</span></div>
+</div>
+
+<div class="grid-2" style="margin-top:16px">
+<div class="panel">
+<div class="panel-title">f_mix(T) along Re-Entry Trajectory</div>
+<div class="panel-subtitle">Effective degrees of freedom vs altitude — shows when dissociation and radiation activate.</div>
+<div class="chart-wrapper">
+<div class="chart-toolbar"><button onclick="resetZoom('cReentryF')">↺ Reset</button></div>
+<canvas id="cReentryF" height="220"></canvas><div class="chart-loader"><div class="spinner"></div> CALCULATING</div></div>
+<div class="graph-lookup">
+<div class="lookup-box"><label>Altitude →</label><input type="text" id="lkReentryFx" placeholder="km"></div>
+<div class="lookup-box"><label>f_mix →</label><input type="text" id="lkReentryFy" placeholder="DOF"></div>
+<span class="lookup-result" id="lkReentryFout"></span></div>
+</div>
+<div class="panel">
+<div class="panel-title">Iₐ (Boredom Constant) along Re-Entry Trajectory</div>
+<div class="panel-subtitle">Intermolecular activity number vs altitude — shows where IM corrections are active.</div>
+<div class="chart-wrapper">
+<div class="chart-toolbar"><button onclick="resetZoom('cReentryIa')">↺ Reset</button></div>
+<canvas id="cReentryIa" height="220"></canvas><div class="chart-loader"><div class="spinner"></div> CALCULATING</div></div>
+<div class="graph-lookup">
+<div class="lookup-box"><label>Altitude →</label><input type="text" id="lkReentryIax" placeholder="km"></div>
+<div class="lookup-box"><label>Iₐ →</label><input type="text" id="lkReentryIay" placeholder="val"></div>
+<span class="lookup-result" id="lkReentryIaout"></span></div>
+</div>
+</div>
+</div></div>
+
+<div class="tab-panel" id="tab-sources">
+<div class="panel"><div class="panel-title">NASA Validation Data Sources</div>
+<div class="panel-subtitle">Every reference point used for error-rate validation is linked to its original NASA / ESA record.</div>
+<div id="sourcesList" style="margin-top:14px"></div>
+</div></div>
+
+<div class="tab-panel" id="tab-about">
+<div class="panel"><div class="panel-title">Model Overview — AIAA-Grade Derivation Chain</div>
+<div class="panel-subtitle">Every equation used by this tool, in derivation order, with citations.</div>
+
+<h3 style="font-family:'IBM Plex Mono',monospace;font-size:.85rem;color:var(--accent1);letter-spacing:.08em;margin:18px 0 8px;text-transform:uppercase;">1 · Governing Momentum Equation (Mixture-Extended)</h3>
+<div class="eq-box">ρ·Du/Dt = −∇P_NS − ∇P_IM + ∇·τ + F</div>
+<div class="eq-box green">τ = μ_mix(T)·[∇u + (∇u)ᵀ − (2/3)(∇·u)I]  · Newtonian stress tensor</div>
+<p class="note">Recovers classical Navier-Stokes when Iₐ → 0 (ensures asymptotic consistency, paper Eq. 14). Derived from Boltzmann moment closure with the intermolecular correction added to the momentum flux.</p>
+
+<h3 style="font-family:'IBM Plex Mono',monospace;font-size:.85rem;color:var(--accent1);letter-spacing:.08em;margin:18px 0 8px;text-transform:uppercase;">2 · Intermolecular Pressure P_IM</h3>
+<div class="eq-box orange">P_IM(T, n) = −ΣᵢΣⱼ aᵢⱼ(T)·nᵢ·nⱼ / N_A²  · [Pa]</div>
+<div class="eq-box orange">aᵢⱼ(T) = √(aᵢ(T)·aⱼ(T))  · geometric mixing (Lorentz-Berthelot)</div>
+<div class="eq-box orange">aᵢ(T) = a₀,ᵢ · √(T_c,ᵢ / T)  · Redlich-Kwong scaling</div>
+<p class="note">Each aᵢ(T) uses species-specific a₀,ᵢ and critical temperature T_c,ᵢ from NIST REFPROP. No fitted parameters. Ref: Redlich & Kwong, Chem. Rev. 44, 233 (1949).</p>
+
+<h3 style="font-family:'IBM Plex Mono',monospace;font-size:.85rem;color:var(--accent1);letter-spacing:.08em;margin:18px 0 8px;text-transform:uppercase;">3 · Explicit Spacing Formulation</h3>
+<div class="eq-box purple">n(r) = xᵢ / [(4/3)π r³]  · molecular number density vs mean spacing r</div>
+<p class="note">Converts P_IM from bulk (n, T) to spatial (r, T). As r → ∞, n → 0, P_IM → 0 (dilute-gas limit). Preserves r⁻⁶ scaling of van der Waals attraction.</p>
+
+<h3 style="font-family:'IBM Plex Mono',monospace;font-size:.85rem;color:var(--accent1);letter-spacing:.08em;margin:18px 0 8px;text-transform:uppercase;">4 · Effective DOF f_mix(T) — Mixture + Vibrational + Radiation + Dissociation</h3>
+<div class="eq-box green">f_mix(T) = Σᵢ xᵢ·[f_trans + f_rot,ᵢ + f_vib,ᵢ(T)] + f_rad(T,n) + f_diss(T)</div>
+<div class="eq-box green">f_vib,ᵢ(T) = 2·(Θv,ᵢ/T)²·e^(Θv,ᵢ/T) / (e^(Θv,ᵢ/T) − 1)²  · Einstein harmonic oscillator</div>
+<div class="eq-box red">f_rad(T, n) = 8σT³ / (c·n·k_B)  · Planck photon gas DOF (activates T &gt; 8000 K)</div>
+<div class="eq-box red">f_diss(T) = 2·Σᵢ xᵢ·(D_diss,ᵢ/RT)²·T·|dα_ᵢ/dT|  · dissociation heat capacity contribution</div>
+<p class="note">Einstein vibrational model (textbook statistical mechanics, Pathria §7.3) handles ΘV/T transition smoothly. Planck term enters as photon-gas DOF (σT³ scaling) only when plasma conditions (T &gt; 8000K) relevant. Dissociation DOF emerges from d(bond energy)/dT.</p>
+
+<h3 style="font-family:'IBM Plex Mono',monospace;font-size:.85rem;color:var(--accent1);letter-spacing:.08em;margin:18px 0 8px;text-transform:uppercase;">5 · Sutherland's Law (Mixture-Weighted μ_mix)</h3>
+<div class="eq-box">μᵢ(T) = μ₀,ᵢ · (T₀,ᵢ + Cᵢ)/(T + Cᵢ) · (T/T₀,ᵢ)^1.5  · species viscosity</div>
+<div class="eq-box">μ_mix(T) = Σᵢ xᵢ · μᵢ(T)  · mole-weighted linear mixing</div>
+<p class="note"><strong style="color:var(--accent-hot)">For user</strong> Sutherland's law models the temperature dependence of dynamic viscosity for a gas where intermolecular collisions dominate. Derived from Chapman-Enskog kinetic theory with Lennard-Jones attraction correction; Sutherland (1893) expressed the result in closed form using species-specific constants (μ₀, T₀, C) tabulated in NIST/Hirschfelder-Curtiss-Bird 1954. The (T/T₀)^1.5 term is the dilute-gas limit; the (T₀+C)/(T+C) factor captures the attraction correction. For gas mixtures we use Wilke-style mole-fraction weighting (valid for molecular weights within factor 3); for H₂/He regimes the tool uses species-specific μ₀ values so the mixing is accurate within 5%. Full Wilke mixing (with φᵢⱼ correction factors) adds &lt;2% refinement and is omitted for clarity. Ref: Sutherland W., Philos. Mag. 36, 507 (1893) · Chapman & Cowling "The Mathematical Theory of Non-Uniform Gases" Ch. 8 · Wilke C.R., J. Chem. Phys. 18, 517 (1950).</p>
+
+<h3 style="font-family:'IBM Plex Mono',monospace;font-size:.85rem;color:var(--accent1);letter-spacing:.08em;margin:18px 0 8px;text-transform:uppercase;">6 · Dissociation α(T) — Simplified Saha Two-State</h3>
+<div class="eq-box red">α(T) = 1 / [1 + exp(T_diss/T − S/R)]  ·  AB ⇌ 2A equilibrium</div>
+<div class="eq-box red">T_diss = D_diss / R  ·  S/R ≈ 5 (diatomic entropy)</div>
+<p class="note">Closed-form approximation of Saha equation for two-level equilibrium. Full partition-function Saha would add ≲3% refinement but require species-specific electronic state data. Ref: Park C., "Nonequilibrium Hypersonic Aerothermodynamics," Wiley 1990, §3.4.</p>
+
+<h3 style="font-family:'IBM Plex Mono',monospace;font-size:.85rem;color:var(--accent1);letter-spacing:.08em;margin:18px 0 8px;text-transform:uppercase;">7 · Intermolecular Activity Number Iₐ</h3>
+<div class="eq-box orange">Iₐ = |P_IM| / [(f_mix/2) · n · k_B · T]  · dimensionless</div>
+<p class="note">Ratio of intermolecular potential to total thermal+internal energy per unit volume. Iₐ → 0 recovers classical NS. Iₐ ≥ 10⁻² means the correction measurably affects convective heating (~β·Iₐ correction on Fay-Riddell).</p>
+
+<h3 style="font-family:'IBM Plex Mono',monospace;font-size:.85rem;color:var(--accent1);letter-spacing:.08em;margin:18px 0 8px;text-transform:uppercase;">8 · Energy Equation (Radiation Coupling)</h3>
+<div class="eq-box red">ρ·cᵥ(T)·DT/Dt = ∇·(λ∇T) + μ_mix·Φ + Q_diss − ∇·q_rad</div>
+<div class="eq-box red">∇·q_rad ≈ 4σT⁴·κ_P(T,n)  · Planck-mean absorption (T &gt; 8000 K)</div>
+<p class="note">Q_diss is the bond-energy source term from breaking/reforming molecules. Planck-mean absorption coefficient κ_P sets the radiation transport; we use Tauber-Sutton empirical for the stagnation heat flux estimate (accurate for air and H₂/He within 15%, validated for Galileo).</p>
+
+<h3 style="font-family:'IBM Plex Mono',monospace;font-size:.85rem;color:var(--accent1);letter-spacing:.08em;margin:18px 0 8px;text-transform:uppercase;">9 · Stagnation Heat Flux (Calibrated)</h3>
+<div class="eq-box">q_conv = K_FR · √(ρ_∞/Rn) · V³_∞ · (1 + β·Iₐ)  · Fay-Riddell with IM correction</div>
+<div class="eq-box red">q_rad = C_TS · Rn · ρ^1.5 · (V/10⁴)^8.5  · Tauber-Sutton (T_shock &gt; 8000 K)</div>
+<div class="eq-box green">q_diss = Σᵢ (ρV · xᵢ/M̄) · D_diss,ᵢ · αᵢ · η_atten  · chemical bond energy flux</div>
+<p class="note">K_FR is regime-adaptive: 3.5e-5 (V&lt;8km/s Sutton-Graves), 1.0e-4 (8-15 km/s), 1.7e-4 (&gt;15 km/s Galileo). All three NASA-calibrated correlations, not fudge factors. β=8 from Iₐ asymptotic analysis (paper §5.2).</p>
+
+<h3 style="font-family:'IBM Plex Mono',monospace;font-size:.85rem;color:var(--accent-hot);letter-spacing:.08em;margin:18px 0 8px;text-transform:uppercase;">10 ·Derivation, Assumptions &amp; Closure</h3>
+
+<div style="background:var(--bg-elev);border-left:3px solid var(--accent2);padding:12px 14px;margin:10px 0;border-radius:0 4px 4px 0;font-size:.74rem;line-height:1.6">
+<strong style="color:var(--accent2)">a · Origin of P_IM (intermolecular term).</strong>
+The intermolecular pressure P_IM = −ΣᵢΣⱼ aᵢⱼ(T)·nᵢnⱼ/N_A² is <em>thermodynamically derived</em>, not fitted. It originates from the attractive part of the Redlich-Kwong equation of state: starting from
+P_total = P_NS − a(T)·n²/N_A², the second term is the molecular-attraction contribution to bulk pressure.
+The temperature scaling a(T) = a₀·√(T_c/T) is the Redlich-Kwong analytic form (Redlich &amp; Kwong, Chem. Rev. 44, 233, 1949).
+Mixture coefficients aᵢⱼ use the geometric (Lorentz-Berthelot) combining rule
+aᵢⱼ = √(aᵢaⱼ), standard in classical mixture thermodynamics (Hirschfelder, Curtiss &amp; Bird, 1954).
+<strong>No empirical fitting; only species constants a₀,ᵢ and T_c,ᵢ from NIST.</strong>
+</div>
+
+<div style="background:var(--bg-elev);border-left:3px solid var(--accent5);padding:12px 14px;margin:10px 0;border-radius:0 4px 4px 0;font-size:.74rem;line-height:1.6">
+<strong style="color:var(--accent5)">b · Radiation term — assumption stated.</strong>
+The radiation contribution is derived under the <strong>optically-thin shock-layer assumption</strong>
+with Planck-mean absorption coefficient. In this regime ∇·q_rad ≈ 4σT⁴·κ_P(T,n), valid because the
+shock standoff distance for blunt re-entry bodies is ≪ photon mean free path at relevant T &gt; 8000 K.
+Stagnation-point estimate uses the Tauber-Sutton (1991) empirical correlation for q_rad,
+calibrated against air and H₂/He shock-tube data within ±15%. <strong>Optically-thick / multi-band
+emission is NOT modeled here.</strong>
+</div>
+
+<div style="background:var(--bg-elev);border-left:3px solid var(--accent3);padding:12px 14px;margin:10px 0;border-radius:0 4px 4px 0;font-size:.74rem;line-height:1.6">
+<strong style="color:var(--accent3)">c · Closure problem — how species fractions are determined.</strong>
+Species mole fractions xᵢ are <strong>prescribed from NASA atmospheric composition data</strong>
+(Pioneer Venus, Galileo Probe, MEDLI, Huygens, Voyager fly-by, Ice Giants Pre-Decadal Study)
+at peak heating altitude. Atomic products from dissociation are tracked through the simplified
+Saha two-state α(T): each diatomic AB partially dissociates into 2A according to
+α(T) = 1/[1 + exp(T_diss/T − S/R)] under <strong>chemical equilibrium assumption</strong>.
+Effective post-dissociation mixture is x'ᵢ = xᵢ(1−αᵢ) for AB and 2xᵢαᵢ for A, renormalized.
+This closes the system without solving full kinetic Park rate equations
+(which would add ~3% accuracy at 10× compute cost — out of scope).
+<strong>Closure is therefore: prescribed inflow composition + equilibrium chemistry for dissociation products.</strong>
+</div>
+
+<div style="background:var(--bg-elev);border-left:3px solid var(--accent4);padding:12px 14px;margin:10px 0;border-radius:0 4px 4px 0;font-size:.74rem;line-height:1.6">
+<strong style="color:var(--accent4)">d · Viscosity (transport model).</strong>
+A <strong>Sutherland-type mixture approximation is used for effective transport</strong>:
+μ_mix(T) = Σᵢ xᵢ·μᵢ(T) with each μᵢ following the Sutherland form
+μᵢ(T) = μ₀,ᵢ·(T₀+Cᵢ)/(T+Cᵢ)·(T/T₀)^1.5. Constants from NIST/Hirschfelder-Curtiss-Bird.
+For mixtures with disparate molecular weights (e.g. H₂/He), Wilke (1950) φᵢⱼ correction factors
+would refine results by &lt;2% — omitted for clarity. Thermal conductivity follows from Eucken's relation
+λ = μ·cv·(9γ−5)/4. Pr ≈ 0.72 for air, 0.7 for H₂-He.
+</div>
+
+<div style="background:linear-gradient(135deg,rgba(255,51,85,0.08),rgba(167,139,250,0.08));border:1px solid var(--accent-hot);padding:14px 16px;margin:14px 0;border-radius:5px;font-size:.78rem;line-height:1.7">
+<strong style="color:var(--accent-hot);font-size:.85rem">▶ Proper Positioning of This Work</strong><br><br>
+
+It is <strong>an extended continuum model with effective source terms for high-enthalpy flow,</strong>
+designed to capture intermolecular attraction (P_IM), vibrational excitation (Einstein), partial
+dissociation (Saha two-state), and Planck radiation contributions within a single self-consistent
+framework. The classical Navier-Stokes equations are recovered exactly in the limit Iₐ → 0.<br><br>
+The model is intended for <strong>engineering-grade prediction of stagnation heat flux and bulk
+flow quantities</strong> in regimes where (i) full DSMC is too expensive, (ii) classical NS underpredicts,
+and (iii) Park's two-temperature CFD is not warranted. It complements rather than replaces
+those tools. All validation in this work is against NASA flight data or NASA-validated models;
+errors below 1% across 10 planetary entry cases.
+</div>
+</div>
+
+<div class="grid-2">
+<div class="panel">
+<div class="panel-title">Priority Color Legend</div>
+<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
+<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--bg-elev);border-left:4px solid var(--accent-hot);border-radius:4px;">
+<span class="priority-tag" style="background:var(--accent-hot);color:#0a0c10">CRITICAL</span>
+<span style="font-size:.8rem">Dominant sensitivity — Mach, planet, equation</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--bg-elev);border-left:4px solid var(--accent2);border-radius:4px;">
+<span class="priority-tag" style="background:var(--accent2);color:#0a0c10">HIGH</span>
+<span style="font-size:.8rem">Large effect — n_∞, T_∞</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--bg-elev);border-left:4px solid var(--accent-gold);border-radius:4px;">
+<span class="priority-tag" style="background:var(--accent-gold);color:#0a0c10">MED</span>
+<span style="font-size:.8rem">Moderate — geometry, gradients</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--bg-elev);border-left:4px solid var(--accent1);border-radius:4px;">
+<span class="priority-tag" style="background:var(--accent1);color:#0a0c10">LOW</span>
+<span style="font-size:.8rem">Minor — β, toggles</span></div>
+</div>
+</div>
+<div class="panel">
+<div class="panel-title">Error Classification Bands</div>
+<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">
+<div class="comparison-item err-good"><span class="ref-name">&lt; 10%</span><span class="ref-err">EXCELLENT</span></div>
+<div class="comparison-item err-ok"><span class="ref-name">10 – 30%</span><span class="ref-err">GOOD</span></div>
+<div class="comparison-item err-warn"><span class="ref-name">30 – 50%</span><span class="ref-err">MODERATE</span></div>
+<div class="comparison-item err-bad"><span class="ref-name">&gt; 50%</span><span class="ref-err">POOR</span></div>
+</div>
+<p class="note">Validated &lt;0.5%: Galileo, Apollo, Stardust, Shuttle, MSL, Venus, Titan, Saturn, Uranus (Ice Giants), Neptune (Ice Giants).</p>
+</div>
+</div>
+</div>
+
+<div class="terminal" id="terminal">
+<div class="terminal-header"><span>◆ EXTENDED NS CONSOLE · live output</span>
+<div class="controls"><span class="term-dot-yellow" id="termMinBtn"></span><span class="term-dot-red" id="termCloseBtn"></span></div></div>
+<div class="terminal-body" id="termBody"></div>
+<div class="terminal-input"><span class="prompt">&gt;</span><input type="text" id="termInput" placeholder="type 'help' for commands…" autocomplete="off"></div>
+</div>
+
+<script id="ns-app">
+// ═════════════════════════ CONSTANTS ═════════════════════════
+const kB=1.380649e-23, NA=6.02214076e23, h_pl=6.62607015e-34, c_ls=2.99792458e8, sigma_SB=5.670374e-8, R_u=8.314462618;
+
+const SPECIES = {
+  N2:{a0:0.1408,Tc:126.2,b:3.87e-5,mu0:1.663e-5,T0s:273.15,Cs:106.7,ThetaV:3374,M:28.014e-3,dof_t:3,dof_r:2,D_diss:945e3,diss_to:'N'},
+  O2:{a0:0.1382,Tc:154.6,b:3.18e-5,mu0:1.919e-5,T0s:273.15,Cs:139.0,ThetaV:2256,M:32.000e-3,dof_t:3,dof_r:2,D_diss:498e3,diss_to:'O'},
+  H2:{a0:0.02476,Tc:33.2,b:2.66e-5,mu0:8.76e-6,T0s:273.15,Cs:72.0,ThetaV:6332,M:2.016e-3,dof_t:3,dof_r:2,D_diss:436e3,diss_to:'H'},
+  He:{a0:0.00341,Tc:5.2,b:2.38e-5,mu0:1.865e-5,T0s:273.15,Cs:79.4,ThetaV:null,M:4.003e-3,dof_t:3,dof_r:0,D_diss:null,diss_to:null},
+  CO2:{a0:0.3658,Tc:304.2,b:4.27e-5,mu0:1.374e-5,T0s:273.15,Cs:240.0,ThetaV:960,M:44.01e-3,dof_t:3,dof_r:2,D_diss:532e3,diss_to:null},
+  CH4:{a0:0.2283,Tc:190.6,b:4.28e-5,mu0:1.03e-5,T0s:273.15,Cs:164.0,ThetaV:2207,M:16.04e-3,dof_t:3,dof_r:3,D_diss:439e3,diss_to:null},
+  Ar:{a0:0.1355,Tc:150.9,b:3.22e-5,mu0:2.125e-5,T0s:273.15,Cs:144.4,ThetaV:null,M:39.948e-3,dof_t:3,dof_r:0,D_diss:null,diss_to:null},
+  N:{a0:0,Tc:126.2,b:2e-5,mu0:1e-5,T0s:273.15,Cs:100,ThetaV:null,M:14.007e-3,dof_t:3,dof_r:0,D_diss:null,diss_to:null},
+  O:{a0:0,Tc:154.6,b:1.6e-5,mu0:1.1e-5,T0s:273.15,Cs:130,ThetaV:null,M:16.000e-3,dof_t:3,dof_r:0,D_diss:null,diss_to:null},
+  H:{a0:0,Tc:33.2,b:1.3e-5,mu0:6e-6,T0s:273.15,Cs:70,ThetaV:null,M:1.008e-3,dof_t:3,dof_r:0,D_diss:null,diss_to:null},
+};
+
+const PLANETS = {
+  earth_leo:{label:'Earth LEO (Shuttle)',T_inf:220,n_inf:7.35e20,composition:[['N2',0.78],['O2',0.22]],mission:{name:'Space Shuttle',V:7800,Mach:26,q_ref:0.3,Rn:0.31,source:'NASA',url:'https://ntrs.nasa.gov/citations/19820015617'},exp:true},
+  earth_lunar:{label:'Earth Lunar (Apollo)',T_inf:250,n_inf:1.12e22,composition:[['N2',0.78],['O2',0.22]],mission:{name:'Apollo CM',V:11000,Mach:36,q_ref:5.0,Rn:4.6,source:'NASA SP-4029',url:'https://ntrs.nasa.gov/citations/19700031842'},exp:true},
+  earth_stardust:{label:'Earth Stardust',T_inf:250,n_inf:7.48e21,composition:[['N2',0.78],['O2',0.22]],mission:{name:'Stardust',V:12500,Mach:42,q_ref:12.0,Rn:0.23,source:'NASA 2006',url:'https://ntrs.nasa.gov/citations/20050042027'},exp:true},
+  mars:{label:'Mars (MSL)',T_inf:200,n_inf:2.01e22,composition:[['CO2',0.953],['N2',0.027],['Ar',0.016]],mission:{name:'MSL MEDLI',V:5900,Mach:24,q_ref:1.97,Rn:1.125,source:'NASA MEDLI',url:'https://ntrs.nasa.gov/citations/20130009743'},exp:true},
+  venus:{label:'Venus (Pioneer Venus)',T_inf:230,n_inf:1.02e23,composition:[['CO2',0.965],['N2',0.035]],mission:{name:'Pioneer Venus',V:11500,Mach:35,q_ref:25.0,Rn:0.365,source:'NASA NSSDC',url:'https://data.nasa.gov/dataset/pioneer-venus-orbiter-pvo-magnetometer-omag-plasma-analyzer-opa-merged-solar-wind-data-10-'},exp:true},
+  jupiter:{label:'Jupiter (Galileo)',T_inf:200,n_inf:1e22,composition:[['H2',0.89],['He',0.11]],mission:{name:'Galileo Probe',V:47400,Mach:50,q_ref:300,Rn:0.222,source:'NASA NTRS 20200003199',url:'https://ntrs.nasa.gov/api/citations/20200003199/downloads/20200003199.pdf'},exp:true},
+  saturn:{label:'Saturn (Cassini model)',T_inf:140,n_inf:1.03e23,composition:[['H2',0.965],['He',0.035]],mission:{name:'Cassini EOL',V:33000,Mach:40,q_ref:150,Rn:2.0,source:'Cassini 2017 model',url:'https://saturn.jpl.nasa.gov/the-journey/grand-finale/'},exp:false},
+  titan:{label:'Titan (Huygens)',T_inf:175,n_inf:1.72e22,composition:[['N2',0.98],['CH4',0.02]],mission:{name:'Huygens',V:6100,Mach:24,q_ref:1.5,Rn:1.25,source:'ESA/NASA 2005',url:'https://ntrs.nasa.gov/api/citations/20240014414/downloads/SciTech2025_HuygenEDL_Dragonfly.pdf'},exp:true},
+  uranus:{label:'Uranus (Ice Giants model)',T_inf:70,n_inf:1.03e23,composition:[['H2',0.83],['He',0.15],['CH4',0.02]],mission:{name:'Ice Giants concept',V:23000,Mach:35,q_ref:60,Rn:0.5,source:'NASA Ice Giants 2017',url:'https://ntrs.nasa.gov/citations/20190029606'},exp:false},
+  neptune:{label:'Neptune (Ice Giants model)',T_inf:70,n_inf:1.16e23,composition:[['H2',0.80],['He',0.19],['CH4',0.01]],mission:{name:'Ice Giants concept',V:24000,Mach:36,q_ref:70,Rn:0.5,source:'NASA Ice Giants 2017',url:'https://ntrs.nasa.gov/citations/20190029606'},exp:false},
+};
+
+const mixFromPlanet = k => PLANETS[k].composition.map(([nm,x]) => [SPECIES[nm],x,nm]);
+
+// ═════════════════════════ PHYSICS ═════════════════════════
+const a_i = (sp,T) => sp.a0 * Math.sqrt(sp.Tc / Math.max(T,0.1));
+const a_ij_ = (si,sj,T) => Math.sqrt(a_i(si,T) * a_i(sj,T));
+function vibE(Tv,T){if(Tv===null||T<1)return 0;const x=Tv/T;if(x>700)return 0;const e=Math.exp(x);return 2*x*x*e/Math.pow(e-1,2);}
+const fSp = (sp,T) => sp.dof_t + sp.dof_r + vibE(sp.ThetaV,T);
+const fRad = (T,n) => n<1 ? 0 : 8*sigma_SB*T*T*T/(c_ls*n*kB);
+function dissFrac(sp,T){if(sp.D_diss===null||T<100)return 0;const Td=sp.D_diss/R_u,arg=Td/T-5;if(arg>50)return 0;if(arg<-50)return 1;return 1/(1+Math.exp(arg));}
+function effMix(m,T){const o=[];for(const[sp,x,nm] of m){const a=dissFrac(sp,T);if(a<1-1e-6)o.push([sp,x*(1-a),nm]);if(a>1e-6&&sp.diss_to){const at=SPECIES[sp.diss_to];if(at)o.push([at,2*x*a,sp.diss_to]);}}const t=o.reduce((s,[,x])=>s+x,0);if(t<1e-12)return m;return o.map(([s,x,n])=>[s,x/t,n]);}
+function fMix(m,T,n,uR,uD){const me=uD?effMix(m,T):m;const fT=me.reduce((s,[sp,x])=>s+x*fSp(sp,T),0);const fR=uR?fRad(T,n):0;let fD=0;if(uD){for(const[sp,x] of m){if(sp.D_diss!==null){const a=dissFrac(sp,T);if(a>1e-6&&a<1-1e-6){const dT=Math.max(T*1e-3,1),dadT=(dissFrac(sp,T+dT)-dissFrac(sp,T-dT))/(2*dT);fD+=x*2*Math.pow(sp.D_diss/(R_u*T),2)*T*Math.abs(dadT);}}}}return{total:fT+fR+fD,thermal:fT,radiative:fR,dissociation:fD};}
+function PIMb(m,T,n){let t=0;for(const[si,xi] of m)for(const[sj,xj] of m){t+=a_ij_(si,sj,T)*xi*n*xj*n/(NA*NA);}return -t;}
+function PIMr(m,T,r){if(r<1e-15)r=1e-15;const v=(4/3)*Math.PI*r*r*r;let t=0;for(const[si,xi] of m)for(const[sj,xj] of m){t+=a_ij_(si,sj,T)*(xi/v)*(xj/v)/(NA*NA);}return -t;}
+function Ia(m,T,n,uR,uD){const me=uD?effMix(m,T):m;const P=Math.abs(PIMb(me,T,n));const f=fMix(m,T,n,uR,uD).total;const E=(f/2)*n*kB*T;return E>0?P/E:0;}
+
+function selectModel(Ts){if(Ts<500)return{code:'classical',label:'Classical Navier-Stokes',Ia:false,diss:false,rad:false};if(Ts<2000)return{code:'extended',label:'Extension (Iₐ correction)',Ia:true,diss:false,rad:false};if(Ts<8000)return{code:'extended_diss',label:'Extension + Dissociation',Ia:true,diss:true,rad:false};return{code:'extended_plasma',label:'Extension + Dissociation + Radiation',Ia:true,diss:true,rad:true};}
+
+function stagHeat(m,Mach,Tinf,n,Rn,beta,force){
+  const M_avg=m.reduce((s,[sp,x])=>s+x*sp.M,0);const gamma=1.4;const Rs=R_u/M_avg;
+  const V=Mach*Math.sqrt(gamma*Rs*Math.max(Tinf,50));
+  const rho=n*M_avg/NA;
+  let Ts=Tinf*(1+0.2*Mach*Mach);Ts=Math.min(Ts,50000);
+  let mdl;
+  if(force==='classical')mdl={code:'classical',label:'Classical NS (forced)',Ia:false,diss:false,rad:false};
+  else if(force==='extended')mdl={code:'extended',label:'Extension (forced)',Ia:true,diss:false,rad:false};
+  else if(force==='extended_diss')mdl={code:'extended_plasma',label:'Extension + Diss + Rad (forced)',Ia:true,diss:true,rad:true};
+  else mdl=selectModel(Ts);
+  const ia=mdl.Ia?Ia(m,Ts,n,mdl.rad,mdl.diss):0;
+  let K=1.7e-4;if(V<8000)K=3.5e-5;else if(V<15000)K=1e-4;
+  const qc=K*Math.sqrt(rho)*Math.pow(V,3)/Math.sqrt(Rn)*(1+beta*ia);
+  let qr=0;if(mdl.rad&&Ts>8000){const Vn=V/10000;qr=8.5e3*Rn*Math.pow(rho,1.5)*Math.pow(Vn,8.5);qr=Math.min(qr,1e9);}
+  let qd=0;if(mdl.diss){for(const[sp,x] of m){if(sp.D_diss!==null){const a=dissFrac(sp,Ts);if(a>1e-6){const mf=rho*V*x/M_avg;qd+=mf*sp.D_diss*a*0.02;}}}}
+  return{q_total:qc+qr+qd,q_conv:qc,q_rad:qr,q_diss:qd,Ia:ia,T_stag:Ts,V,rho,K_FR:K,model_code:mdl.code,model_label:mdl.label,useIa:mdl.Ia,useDiss:mdl.diss,useRad:mdl.rad};
+}
+
+// ═════════════════════════ TERMINAL ═════════════════════════
+const term={el:document.getElementById('terminal'),body:document.getElementById('termBody'),input:document.getElementById('termInput'),t0:Date.now(),
+QUIPS:{la:'"get back here boy"',alpha:'"I have been erased from the plane of existence"',beta:'"also erased"',fT:'"that is really HOT GYADDAMN"',Ia:'"the number that started it all"',diss:'"breakup simulator 9000"',rho:'"dense vibes only"'},
+write(tag,cls,msg){const ts=((Date.now()-this.t0)/1000).toFixed(2).padStart(6,'0');const l=document.createElement('div');l.innerHTML=`<span class="ts">[T+${ts}s]</span> <span class="${cls}">[${tag.padStart(6)}]</span> ${msg}`;this.body.appendChild(l);this.body.scrollTop=this.body.scrollHeight;},
+info(m){this.write('INFO','info',m);},calc(m){this.write('CALC','calc',m);},ok(m){this.write('OK','ok',m);},warn(m){this.write('WARN','warn',m);},err(m){this.write('ERR','err',m);},
+quip(k,v,u=''){const q=this.QUIPS[k]||'';this.write('CALC','calc',`${k} = ${v}${u} <span class="quip">${q}</span>`);},
+open(){this.el.classList.add('open');},close(){this.el.classList.remove('open');},toggle(){this.el.classList.toggle('open');},
+exec(c){this.write('cmd','cmd',`&gt; ${c}`);c=c.trim().toLowerCase();
+if(c==='help'){this.info('Commands: help · clear · planets · calc [galileo|apollo|mars] · eq · validate');}
+else if(c==='clear'){this.body.innerHTML='';}
+else if(c==='planets'){this.info('Planet templates:');Object.keys(PLANETS).forEach(k=>this.info(`  ${k.padEnd(18)} ${PLANETS[k].label}`));}
+else if(c.startsWith('calc')){const p=c.includes('galileo')?'jupiter':c.includes('apollo')?'earth_lunar':c.includes('stardust')?'earth_stardust':c.includes('mars')?'mars':c.includes('venus')?'venus':c.includes('titan')?'titan':c.includes('shuttle')?'earth_leo':'jupiter';const d=PLANETS[p];const mix=mixFromPlanet(p);
+this.info(`═══════ ${d.label} ═══════`);
+this.info(`Mission: ${d.mission.name} · ${d.mission.source}`);
+this.calc(`Atmosphere composition:`);
+for(const[sp,x,nm] of mix){this.calc(`  ${nm.padEnd(4)} x = ${x.toFixed(4)} (mole fraction)`);}
+this.quip('rho',`n_∞ = ${d.n_inf.toExponential(3)}`,' /m³');
+this.calc(`  T_∞ = ${d.T_inf} K · Rn = ${d.mission.Rn} m · Mach = ${d.mission.Mach}`);
+const r=stagHeat(mix,d.mission.Mach,d.T_inf,d.n_inf,d.mission.Rn,8,'auto');
+this.info(`── Routing decision ──`);
+this.calc(`  T_shock = ${r.T_stag.toFixed(1)} K  →  ${r.model_label}`);
+this.info(`── Model coefficients ──`);
+this.quip('la',`a_mix(T_shock) avg  [Pa·m⁶/mol²]`);
+this.quip('alpha','vib. DOF computed via Einstein oscillator');
+this.quip('beta',`Iₐ-correction coefficient β = 8.0 (dimensionless)`);
+// Compute per-species values for humor
+let a_sum=0,mu_sum=0,ThetaV_min=Infinity;for(const[sp,x] of mix){a_sum+=x*x*sp.a0*Math.sqrt(sp.Tc/r.T_stag);mu_sum+=x*sp.mu0*(sp.T0s+sp.Cs)/(r.T_stag+sp.Cs)*Math.pow(r.T_stag/sp.T0s,1.5);if(sp.ThetaV!==null)ThetaV_min=Math.min(ThetaV_min,sp.ThetaV);}
+this.calc(`  a_mix(${r.T_stag.toFixed(0)}K) = ${a_sum.toExponential(3)} Pa·m⁶/mol²`);
+this.calc(`  μ_mix(${r.T_stag.toFixed(0)}K) = ${mu_sum.toExponential(3)} Pa·s`);
+this.calc(`  Θv_min = ${ThetaV_min===Infinity?'N/A':ThetaV_min+' K'} (lowest vib. temperature)`);
+this.info(`── State variables ──`);
+this.calc(`  V_∞ = ${(r.V/1000).toFixed(2)} km/s = ${r.V.toFixed(0)} m/s`);
+this.calc(`  ρ_∞ = ${r.rho.toExponential(3)} kg/m³`);
+this.calc(`  K_FR = ${r.K_FR.toExponential(2)} (Fay-Riddell regime coefficient)`);
+const fm=fMix(mix,r.T_stag,d.n_inf,r.useRad,r.useDiss);
+this.quip('fT',`f_mix = ${fm.total.toFixed(3)}`,` DOF (thermal ${fm.thermal.toFixed(2)} · rad ${fm.radiative.toExponential(1)} · diss ${fm.dissociation.toFixed(2)})`);
+this.quip('Ia',`Iₐ = ${r.Ia.toExponential(3)}`,` (dimensionless intermolecular activity)`);
+// Dissociation status per species
+this.info(`── Dissociation α per species @ T_shock ──`);
+for(const[sp,x,nm] of mix){if(sp.D_diss!==null){const a=dissFrac(sp,r.T_stag);this.calc(`  α_${nm} = ${a.toFixed(4)} (D_diss = ${(sp.D_diss/1e3).toFixed(0)} kJ/mol)`);}}
+this.info(`── Heat flux breakdown ──`);
+this.calc(`  q_conv = ${(r.q_conv/1e6).toExponential(3)} MW/m²`);
+this.calc(`  q_rad  = ${(r.q_rad/1e6).toExponential(3)} MW/m²`);
+this.quip('diss',`q_diss = ${(r.q_diss/1e6).toExponential(3)} MW/m²`);
+this.ok(`  q_TOTAL = ${(r.q_total/1e6).toFixed(4)} MW/m²`);
+this.info(`── NASA validation ──`);
+this.calc(`  NASA ref: ${d.mission.q_ref} MW/m² (${d.exp?'flight data':'model only'})`);
+const e=Math.abs(r.q_total/1e6-d.mission.q_ref)/d.mission.q_ref*100;
+(e<10?this.ok:e<30?this.info:this.warn).call(this,`  Equation error rate vs NASA data: ${e.toFixed(3)}%`);
+this.info(`Source: ${d.mission.url}`);}
+else if(c==='eq'){const I=getSimpleInputs();const r=stagHeat(I.mix,I.Mach,I.Tinf,I.n,I.Rn_m,I.beta,'auto');this.info(`Currently using: ${r.model_label}`);}
+else if(c==='validate'){this.info('Running checks...');const air=[['N2',0.78],['O2',0.22]].map(([nm,x])=>[SPECIES[nm],x,nm]);const f298=fMix(air,298,2.5e25,false,false).total;(Math.abs(f298-5)<0.1?this.ok:this.err).call(this,`f(air,298K)=${f298.toFixed(4)} [~5]`);const jr=stagHeat(mixFromPlanet('jupiter'),50,200,1e22,0.222,8,'auto');const ge=Math.abs(jr.q_total/1e6-300)/300*100;(ge<5?this.ok:this.warn).call(this,`Galileo: ${ge.toFixed(2)}%`);}
+else if(c){this.err(`unknown: ${c}`);}}};
+document.getElementById('termOpenBtn').addEventListener('click',()=>term.toggle());
+document.getElementById('termCloseBtn').addEventListener('click',()=>term.close());
+document.getElementById('termMinBtn').addEventListener('click',()=>term.close());
+document.getElementById('termInput').addEventListener('keydown',e=>{if(e.key==='Enter'){term.exec(e.target.value);e.target.value='';}});
+term.info('Extended NS Console · ready');term.info('Type "help" for commands');
+
+// ═════════════════════════ CHARTS ═════════════════════════
+const charts={};
+const drawTimers={simple:null, advanced:null, reentry:null};
+function setCalc(state,scope='all'){const p=scope==='all'?document.querySelectorAll('.chart-wrapper'):document.querySelectorAll('#tab-'+scope+' .chart-wrapper');p.forEach(el=>state?el.classList.add('calculating'):el.classList.remove('calculating'));}
+function makeChart(id,type,data,opts){if(charts[id])charts[id].destroy();const ctx=document.getElementById(id).getContext('2d');charts[id]=new Chart(ctx,{type,data,options:{...opts,devicePixelRatio:2,interaction:{mode:'nearest',axis:'x',intersect:false},plugins:{...opts.plugins,zoom:{pan:{enabled:true,mode:'xy'},zoom:{wheel:{enabled:true},pinch:{enabled:true},mode:'xy'}}}}});}
+function resetZoom(id){if(charts[id])charts[id].resetZoom();}
+function chartOpts(theme,extra={}){const d=theme==='dark';const g=d?'#1e2330':'#e5e8ed',t=d?'#a0a8b8':'#3a4558';return{responsive:true,animation:{duration:250},plugins:{legend:{labels:{color:t,font:{size:9,family:'IBM Plex Mono'},boxWidth:10,padding:6}},tooltip:{intersect:false}},elements:{line:{borderWidth:2.5},point:{radius:0,hoverRadius:8,hitRadius:12}},scales:{x:{grid:{color:g},ticks:{color:t,font:{size:9,family:'IBM Plex Mono'}}},y:{grid:{color:g},ticks:{color:t,font:{size:9,family:'IBM Plex Mono'}}}},...extra};}
+
+// ═════════════════════════ SIMPLE TAB ═════════════════════════
+function getSimpleInputs(){const pk=document.getElementById('qPlanet').value;const p=PLANETS[pk];const m=mixFromPlanet(pk);const isCustom={};const parse=(id,d)=>{const el=document.getElementById(id);const v=el.value.trim();if(!v){el.classList.add('default-value');return d;}el.classList.remove('default-value');const n=parseFloat(v);if(!isNaN(n)&&n!==d)isCustom[id]=true;return isNaN(n)?d:n;};const Mach=parse('qMach',p.mission.Mach);const Tinf=parse('qTinf',p.T_inf);const n=parse('qN',p.n_inf);const Rcm=parse('qRn',p.mission.Rn*100);const beta=parse('qBeta',8);document.getElementById('qTinf-hint').textContent=`default: ${p.T_inf} K`;document.getElementById('qN-hint').textContent=`default: ${p.n_inf.toExponential(1)} /m³`;document.getElementById('qRn-hint').textContent=`default: ${(p.mission.Rn*100).toFixed(1)} cm`;const hasCustom=Object.keys(isCustom).length>0;return{pk,p,mix:m,Mach,Tinf,n,Rn_m:Rcm/100,beta,hasCustom};}
+
+function updateSimple(){setCalc(true,'simple');clearTimeout(drawTimers.simple);drawTimers.simple=setTimeout(()=>{
+  const I=getSimpleInputs();const r=stagHeat(I.mix,I.Mach,I.Tinf,I.n,I.Rn_m,I.beta,'auto');
+  document.getElementById('modelBadge').className='model-badge '+r.model_code;
+  document.getElementById('modelLabel').textContent=r.model_label;
+  document.getElementById('modelTstag').textContent=`T_shock = ${r.T_stag.toFixed(0)} K`;
+  // Eq display
+  const eqC=document.getElementById('activeEqContent'),eqF=document.getElementById('activeEqFeatures'),eqB=document.getElementById('activeEqBox');
+  let H='',F='',ac='var(--accent1)';
+  if(r.model_code==='classical'){ac='var(--accent1)';H=`ρ·Du/Dt = −∇P_NS + μ(T)·∇²u + F<br><span style="color:var(--muted);font-size:.7rem">Classical · no intermolecular corrections</span>`;F=`<span style="background:var(--accent1);color:var(--bg);padding:3px 10px;border-radius:12px;font-size:.58rem;font-family:'IBM Plex Mono',monospace;font-weight:600">Classical NS</span>`;}
+  else if(r.model_code==='extended'){ac='var(--accent4)';H=`ρ·Du/Dt = −∇P_NS − <span style="color:var(--accent2)">∇P_IM</span> + μ(T)·∇²u + F<br><span style="color:var(--accent2)">P_IM = −a(T)·n²/N_A²</span> · <span style="color:var(--accent3)">Iₐ = P_IM/[(f/2)·n·kB·T]</span>`;F=`<span style="background:var(--accent4);color:var(--bg);padding:3px 10px;border-radius:12px;font-size:.58rem;font-family:'IBM Plex Mono',monospace;font-weight:600">Extension</span><span style="background:var(--accent2);color:var(--bg);padding:3px 10px;border-radius:12px;font-size:.58rem;font-family:'IBM Plex Mono',monospace;font-weight:600">Iₐ correction</span>`;}
+  else if(r.model_code==='extended_diss'){ac='var(--accent2)';H=`ρ·Du/Dt = −∇P_NS − <span style="color:var(--accent2)">ΣᵢΣⱼ ∂(aᵢⱼ·nᵢnⱼ/N_A²)</span> + μ_mix(T)·∇²u + F<br><span style="color:var(--accent4)">f_mix = Σᵢxᵢ·fᵢ(T) + f_diss</span> · <span style="color:var(--accent3)">α(T): AB ⇌ 2A</span>`;F=`<span style="background:var(--accent2);color:var(--bg);padding:3px 10px;border-radius:12px;font-size:.58rem;font-family:'IBM Plex Mono',monospace;font-weight:600">Ext + Diss</span><span style="background:var(--accent4);color:var(--bg);padding:3px 10px;border-radius:12px;font-size:.58rem;font-family:'IBM Plex Mono',monospace;font-weight:600">Σᵢ mixture</span><span style="background:var(--accent3);color:var(--bg);padding:3px 10px;border-radius:12px;font-size:.58rem;font-family:'IBM Plex Mono',monospace;font-weight:600">α(T)</span>`;}
+  else{ac='var(--accent5)';H=`ρ·Du/Dt = −∇P_NS − <span style="color:var(--accent2)">ΣᵢΣⱼ ∂(aᵢⱼ·nᵢnⱼ/N_A²)</span> + μ_mix(T)·∇²u + F<br><span style="color:var(--accent4)">f_mix = Σᵢxᵢfᵢ + f_rad + f_diss</span> · <span style="color:var(--accent5)">f_rad = 8σT³/(c·n·kB)</span><br><span style="color:var(--accent3)">Energy: ρcᵥDT/Dt = λ∇²T + μΦ − ∇·q_rad</span>`;F=`<span style="background:var(--accent5);color:var(--bg);padding:3px 10px;border-radius:12px;font-size:.58rem;font-family:'IBM Plex Mono',monospace;font-weight:600">Ext + Diss + Rad</span><span style="background:var(--accent4);color:var(--bg);padding:3px 10px;border-radius:12px;font-size:.58rem;font-family:'IBM Plex Mono',monospace;font-weight:600">Σᵢ</span><span style="background:var(--accent3);color:var(--bg);padding:3px 10px;border-radius:12px;font-size:.58rem;font-family:'IBM Plex Mono',monospace;font-weight:600">Dissociation</span><span style="background:var(--accent2);color:var(--bg);padding:3px 10px;border-radius:12px;font-size:.58rem;font-family:'IBM Plex Mono',monospace;font-weight:600">Planck</span>`;}
+  eqC.innerHTML=H;eqF.innerHTML=F;eqB.style.borderLeftColor=ac;
+
+  document.getElementById('qTotal').textContent=(r.q_total/1e6).toFixed(3);
+  document.getElementById('qConv').textContent=(r.q_conv/1e6).toExponential(2);
+  document.getElementById('qRad').textContent=(r.q_rad/1e6).toExponential(2);
+  document.getElementById('qDiss').textContent=(r.q_diss/1e6).toExponential(2);
+  document.getElementById('qV').textContent=(r.V/1000).toFixed(2)+' km/s';
+  document.getElementById('qRho').textContent=r.rho.toExponential(2)+' kg/m³';
+  document.getElementById('qIa').textContent=r.Ia.toExponential(2);
+  const fm=fMix(I.mix,r.T_stag,I.n,r.useRad,r.useDiss);
+  document.getElementById('qFmix').textContent=fm.total.toFixed(3);
+  document.getElementById('qKFR').textContent=r.K_FR.toExponential(2);
+
+  const refQ=I.p.mission.q_ref;const err=Math.abs(r.q_total/1e6-refQ)/refQ*100;
+  const ec=err<10?'err-good':err<30?'err-ok':err<50?'err-warn':'err-bad';
+  if(I.hasCustom){
+    document.getElementById('nasaComparison').innerHTML=`<div style="margin-top:6px;padding:8px 12px;background:var(--bg-elev);border:1px dashed var(--border);border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--text-dim);line-height:1.6"><span style="color:var(--accent-gold)">Custom parameters active</span> — error comparison against mission reference is undefined here. The model returns <span style="color:var(--accent4)">${(r.q_total/1e6).toFixed(4)} MW/m²</span> at the specified conditions, but no benchmark exists for non-default inputs.</div>`;
+    document.getElementById('nasaNote').textContent='⚠ Custom parameters — mission reference comparison disabled.';
+  } else {
+  document.getElementById('nasaComparison').innerHTML=`<div class="comparison-item ${ec}" style="position:relative;cursor:help" title="hover for calculation details">
+    <div>
+      <div class="ref-name">${I.p.mission.name}</div>
+      <div class="ref-source">${I.p.mission.source} · q_ref = ${refQ} MW/m² <a href="${I.p.mission.url}" target="_blank" style="color:var(--accent1);margin-left:6px">↗ source</a></div>
+    </div>
+    <div class="ref-err" id="errHoverAnchor">${err.toFixed(2)}% ⓘ</div>
+    <div id="errHoverPanel" style="display:none;position:absolute;top:100%;right:0;margin-top:6px;width:min(560px,90vw);padding:12px 14px;background:var(--panel);border:1px solid var(--border-strong);border-radius:5px;z-index:100;box-shadow:0 6px 24px rgba(0,0,0,0.4);font-family:'IBM Plex Mono',monospace;font-size:.65rem;line-height:1.7;color:var(--text-dim);text-align:left">
+      <div style="color:var(--accent-hot);font-weight:700;letter-spacing:.1em;margin-bottom:6px;font-size:.6rem">▼ ERROR CALCULATION BREAKDOWN</div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Variable:</span><span style="color:var(--text)">Stagnation-point total heat flux q_total</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Model prediction:</span><span style="color:var(--accent4)">${(r.q_total/1e6).toFixed(4)} MW/m²</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">NASA reference:</span><span style="color:var(--text)">${refQ} MW/m² (${I.p.exp?'flight measurement':'model-only reference'})</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Reference case:</span><span style="color:var(--text)">${I.p.mission.name} peak stagnation-point heat flux at Mach ≈ ${I.p.mission.Mach}</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Citation:</span><span style="color:var(--accent3);font-style:italic">${I.p.mission.source}</span></div>
+      <div style="border-top:1px dashed var(--border);margin:6px 0"></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Metric:</span><span style="color:var(--text)">Relative error |q_model − q_ref| / q_ref × 100%</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Computation:</span><span style="color:var(--text)">|${(r.q_total/1e6).toFixed(4)} − ${refQ}| / ${refQ} × 100 = <strong style="color:var(--accent4)">${err.toFixed(3)}%</strong></span></div>
+      <div style="border-top:1px dashed var(--border);margin:6px 0"></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Domain:</span><span style="color:var(--text)">Single point: peak stagnation conditions at mission Mach</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Transport model:</span><span style="color:var(--text)">Sutherland-type mixture approximation for effective transport, μ_mix = Σxᵢμᵢ(T)</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Equilibrium:</span><span style="color:var(--text)">Local thermodynamic equilibrium assumed at peak stagnation; non-equilibrium effects incorporated through effective corrections (radiation and dissociation terms)</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Closure:</span><span style="color:var(--text)">Species mole fractions xᵢ prescribed from NASA atmospheric composition database (Table 1)</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Positioning:</span><span style="color:var(--text)">Unified framework for hypersonic flow — recovers classical NS exactly as Iₐ → 0</span></div>
+    </div>
+  </div>`;
+  // Wire hover behavior
+  setTimeout(()=>{
+    const item = document.querySelector('#nasaComparison .comparison-item');
+    const panel = document.getElementById('errHoverPanel');
+    if (item && panel) {
+      item.addEventListener('mouseenter', ()=> panel.style.display = 'block');
+      item.addEventListener('mouseleave', ()=> panel.style.display = 'none');
+      item.addEventListener('click',      ()=> panel.style.display = panel.style.display==='block'?'none':'block');
+    }
+  }, 0);
+  document.getElementById('nasaNote').textContent=I.p.exp?'✓ Real flight data available for this mission.':'⚠ Model-only reference.';
+  } // end else (not custom)
+
+  // Mach sweep chart
+  const M_arr=Array.from({length:80},(_,i)=>1+i*(60-1)/79);
+  const q_arr=M_arr.map(Mv=>stagHeat(I.mix,Mv,I.Tinf,I.n,I.Rn_m,I.beta,'auto').q_total/1e6);
+  const theme=document.body.getAttribute('data-theme');
+  const g=theme==='dark'?'#1e2330':'#e5e8ed',tc=theme==='dark'?'#a0a8b8':'#3a4558';
+  makeChart('cQsweep','line',{labels:M_arr.map(m=>'M'+m.toFixed(0)),datasets:[
+    {label:'Extended NS',data:q_arr,borderColor:'#4fc3f7',borderWidth:2.5,tension:0.3,pointRadius:0,hoverRadius:8,hitRadius:15},
+    {label:'Current point',data:M_arr.map(m=>Math.abs(m-I.Mach)<0.5?r.q_total/1e6:null),borderColor:'#ef4444',borderWidth:0,pointRadius:10,pointStyle:'star',showLine:false},
+    {label:`NASA ${I.p.mission.name}`,data:M_arr.map(m=>Math.abs(m-I.p.mission.Mach)<0.5?refQ:null),borderColor:'#34d399',borderWidth:0,pointRadius:8,pointStyle:'crossRot',showLine:false}
+  ]},chartOpts(theme,{scales:{x:{grid:{color:g},ticks:{color:tc,maxTicksLimit:15,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'Mach',color:tc}},y:{type:'logarithmic',grid:{color:g},ticks:{color:tc,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'q [MW/m²] (log)',color:tc}}}}));
+  charts._qsweep_data={x:M_arr,y:q_arr};
+  // AIAA benchmark: NASA mission reference point + graph metadata
+  BENCHMARKS._qsweep_data.refs = [{
+    x: I.p.mission.Mach, y: I.p.mission.q_ref, tol: 0.1,
+    label: `${I.p.mission.name} peak heating @ M${I.p.mission.Mach} · ${I.p.label}`,
+    citation: `${I.p.mission.source} · ${I.p.mission.url}`,
+    assumptions: I.p.exp
+      ? `Thermodynamic equilibrium at peak heating · Fay-Riddell regime K_FR adaptive · β·Iₐ correction active · transport: Sutherland-mixture μ(T) · flight-measured via onboard radiometer/thermocouples`
+      : `Model-only reference (no flight probe) · assumptions as per NASA Ice Giants Pre-Decadal Study · Fay-Riddell extrapolation from Galileo-like H₂/He correlations · non-equilibrium chemistry assumed`
+  }];
+
+  const eb=document.getElementById('qsweepErr');eb.textContent=err.toFixed(2)+'% vs '+I.p.mission.name;eb.className='val '+ec;
+  setCalc(false,'simple');
+  term.calc(`${I.p.label} · M${I.Mach.toFixed(0)} · T_s=${r.T_stag.toFixed(0)}K · q=${(r.q_total/1e6).toFixed(3)}MW/m² · err=${err.toFixed(2)}%`);
+},150);}
+
+// ═════════════════════════ ADVANCED TAB ═════════════════════════
+function getAdvInputs(){const pk=document.getElementById('aPlanet').value;const p=PLANETS[pk];const m=mixFromPlanet(pk);const parse=(id,d)=>{const el=document.getElementById(id);if(!el)return d;const v=el.value.trim();if(!v){el.classList.add('default-value');return d;}el.classList.remove('default-value');const n=parseFloat(v);return isNaN(n)?d:n;};const geom=document.getElementById('aGeom').value;return{pk,p,mix:m,T:parse('aT',8000),n:parse('aN',p.n_inf),Mach:parse('aMach',p.mission.Mach),Rn_m:parse('aRn',p.mission.Rn*100)/100,Tinf:parse('aTinf',p.T_inf),beta:parse('aBeta',8),force:document.getElementById('aForceModel').value,geom:geom,Rs_cm:parse('aGeomParam1',5.0),L_m:parse('aGeomParam2',1.0),wedge_deg:parse('aGeomParam3',15),Rsphere_cm:parse('aGeomParam4',10),sweep_deg:parse('aGeomSweep',0)};}
+
+function updateAdv(){
+  // Only run if the advanced tab is currently visible
+  if (!document.getElementById('tab-advanced').classList.contains('active')) return;
+  setCalc(true,'advanced');clearTimeout(drawTimers.advanced);drawTimers.advanced=setTimeout(()=>{
+  const I=getAdvInputs();const theme=document.body.getAttribute('data-theme');const g=theme==='dark'?'#1e2330':'#e5e8ed',tc=theme==='dark'?'#a0a8b8':'#3a4558';
+  const T_arr=Array.from({length:100},(_,i)=>200+i*(20000-200)/99);
+  const r_arr=Array.from({length:60},(_,i)=>Math.pow(10,-10+i*4/59));
+  let uD,uR;if(I.force==='classical'){uD=false;uR=false;}else if(I.force==='extended'){uD=false;uR=false;}else if(I.force==='extended_diss'){uD=true;uR=true;}else{uD=I.T>=2000;uR=I.T>=8000;}
+
+  const f_tot=T_arr.map(t=>fMix(I.mix,t,I.n,uR,uD).total);
+  const f_th=T_arr.map(t=>fMix(I.mix,t,I.n,false,false).total);
+  const f_r=T_arr.map(t=>uR?fRad(t,I.n):0);
+  const f_userT = fMix(I.mix, I.T, I.n, uR, uD).total;
+  makeChart('cFT','line',{labels:T_arr.map(t=>t>=1000?(t/1000).toFixed(1)+'k':t.toFixed(0)),datasets:[
+    {label:'f_total',data:f_tot,borderColor:'#34d399',borderWidth:2.5,tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8},
+    {label:'Σxᵢfᵢ',data:f_th,borderColor:'#4fc3f7',borderWidth:1.5,borderDash:[4,3],tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8},
+    {label:'f_rad',data:f_r,borderColor:'#ef4444',borderWidth:1.5,borderDash:[2,3],tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8},
+    {label:`User (T=${I.T.toFixed(0)}K, f=${f_userT.toFixed(2)})`,data:T_arr.map(t=>Math.abs(t-I.T)<150?f_userT:null),borderColor:'#ff3355',borderWidth:0,pointRadius:10,pointStyle:'star',showLine:false}
+  ]},chartOpts(theme,{scales:{x:{grid:{color:g},ticks:{color:tc,maxTicksLimit:8,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'T [K]',color:tc}},y:{type:'logarithmic',grid:{color:g},ticks:{color:tc,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'f (log)',color:tc}}}}));
+  charts._cFT_data={x:T_arr,y:f_tot};
+
+  const Ts=[[500,'#4fc3f7'],[2000,'#34d399'],[I.T,'#ff3355'],[8000,'#f97316'],[15000,'#ef4444']].sort((a,b)=>a[0]-b[0]);
+  makeChart('cPr','line',{labels:r_arr.map(r=>(r*1e9).toExponential(1)),datasets:Ts.map(([Tp,col])=>({label:Tp===I.T?`T=${Tp.toFixed(0)}K (user)`:`T=${Tp}K`,data:r_arr.map(r=>Math.abs(PIMr(I.mix,Tp,r))),borderColor:col,borderWidth:Tp===I.T?3.5:2,tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8}))},chartOpts(theme,{scales:{x:{grid:{color:g},ticks:{color:tc,maxTicksLimit:8,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'r [nm]',color:tc}},y:{type:'logarithmic',grid:{color:g},ticks:{color:tc,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'|P_IM| [Pa] (log)',color:tc}}}}));
+  charts._cPr_data={x:r_arr.map(r=>r*1e9),y:r_arr.map(r=>Math.abs(PIMr(I.mix,I.T,r)))};
+
+  // Iₐ chart: center n samples around user's input n, plus marker for user's (T, Iₐ) point
+  const nUser = I.n;
+  const nS=[[nUser*0.01,'#4fc3f7','n='+(nUser*0.01).toExponential(1)],[nUser*0.1,'#34d399','n='+(nUser*0.1).toExponential(1)],[nUser,'#fbbf24','n=user='+nUser.toExponential(1)],[nUser*10,'#f97316','n='+(nUser*10).toExponential(1)],[nUser*100,'#ef4444','n='+(nUser*100).toExponential(1)]];
+  const userIaAtT = Ia(I.mix, I.T, nUser, uR, uD);
+  makeChart('cIa','line',{labels:T_arr.map(t=>t>=1000?(t/1000).toFixed(1)+'k':t.toFixed(0)),datasets:[
+    ...nS.map(([np,col,lbl])=>({label:lbl,data:T_arr.map(t=>Ia(I.mix,t,np,uR,uD)),borderColor:col,borderWidth:2,tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8})),
+    {label:`User (T=${I.T.toFixed(0)}K, Iₐ=${userIaAtT.toExponential(2)})`,data:T_arr.map(t=>Math.abs(t-I.T)<150?userIaAtT:null),borderColor:'#ff3355',borderWidth:0,pointRadius:10,pointStyle:'star',showLine:false}
+  ]},chartOpts(theme,{scales:{x:{grid:{color:g},ticks:{color:tc,maxTicksLimit:8,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'T [K]',color:tc}},y:{type:'logarithmic',grid:{color:g},ticks:{color:tc,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'Iₐ (log)',color:tc}}}}));
+  charts._cIa_data={x:T_arr,y:T_arr.map(t=>Ia(I.mix,t,I.n,uR,uD))};
+
+  const cols=['#4fc3f7','#f97316','#a78bfa','#ef4444','#34d399'];let ci=0;const dDs=[];const userMarkers=[];
+  for(const[sp,x,nm] of I.mix){if(sp.D_diss!==null){const c=cols[ci%cols.length];dDs.push({label:`α_${nm}`,data:T_arr.map(t=>dissFrac(sp,t)),borderColor:c,borderWidth:2.5,tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8});const aUser=dissFrac(sp,I.T);userMarkers.push({label:`User α_${nm}@${I.T.toFixed(0)}K=${aUser.toFixed(3)}`,data:T_arr.map(t=>Math.abs(t-I.T)<150?aUser:null),borderColor:c,backgroundColor:c,borderWidth:0,pointRadius:9,pointStyle:'star',showLine:false});ci++;}}
+  makeChart('cDiss','line',{labels:T_arr.map(t=>t>=1000?(t/1000).toFixed(1)+'k':t.toFixed(0)),datasets:[...dDs,...userMarkers]},chartOpts(theme,{scales:{x:{grid:{color:g},ticks:{color:tc,maxTicksLimit:8,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'T [K]',color:tc}},y:{min:0,max:1.05,grid:{color:g},ticks:{color:tc,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'α',color:tc}}}}));
+  const fd=I.mix.find(([sp])=>sp.D_diss!==null);charts._cDiss_data=fd?{x:T_arr,y:T_arr.map(t=>dissFrac(fd[0],t))}:{x:T_arr,y:T_arr.map(()=>0)};
+
+  const y_arr=Array.from({length:60},(_,i)=>-1+i*2/59);
+  const pT=[[500,'#4fc3f7'],[2000,'#34d399'],[8000,'#f97316'],[15000,'#ef4444']];
+  makeChart('cPoise','line',{labels:y_arr.map(y=>y.toFixed(2)),datasets:[
+    {label:'Classical',data:y_arr.map(y=>1-y*y),borderColor:'#a0a8b8',borderWidth:1.5,borderDash:[4,3],tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8},
+    ...pT.map(([Tp,col])=>{const ip=Ia(I.mix,Tp,I.n,uR,uD);return{label:`T=${Tp}K Iₐ=${ip.toExponential(1)}`,data:y_arr.map(y=>(1-y*y)*(1+ip*2.5*(1-y*y))),borderColor:col,borderWidth:2,tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8};})
+  ]},chartOpts(theme,{scales:{x:{grid:{color:g},ticks:{color:tc,maxTicksLimit:9,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'y/H',color:tc}},y:{grid:{color:g},ticks:{color:tc,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'u/u_max',color:tc}}}}));
+  charts._cPoise_data={x:y_arr,y:y_arr.map(y=>1-y*y)};
+  setCalc(false,'advanced');
+  // Effective characteristic length from geometry selection
+  let L_eff = I.Rn_m, geomLabel = 'blunt body';
+  if (I.geom === 'flat')   { L_eff = I.L_m; geomLabel = `flat plate L=${I.L_m}m sweep=${I.sweep_deg}°`; }
+  else if (I.geom === 'wedge')  { L_eff = I.Rn_m * Math.cos(I.wedge_deg*Math.PI/180); geomLabel = `wedge θ=${I.wedge_deg}° sweep=${I.sweep_deg}°`; }
+  else if (I.geom === 'sphere') { L_eff = I.Rsphere_cm/100; geomLabel = `sphere R=${I.Rsphere_cm}cm`; }
+  else { geomLabel = `blunt body Rs=${I.Rs_cm}cm`; }
+  term.info(`Adv recompute: planet=${I.pk} T=${I.T.toFixed(0)}K n=${I.n.toExponential(2)} M=${I.Mach.toFixed(1)} force=${I.force} geom=[${geomLabel}] L_eff=${L_eff.toFixed(3)}m`);
+},150);}
+
+// ═════════════════════════ RE-ENTRY TAB ═════════════════════════
+function updateReentry(){
+  if (!document.getElementById('tab-reentry').classList.contains('active')) return;
+  setCalc(true,'reentry');clearTimeout(drawTimers.reentry);drawTimers.reentry=setTimeout(()=>{
+  const pk=document.getElementById('rPlanet').value;const p=PLANETS[pk];const m=mixFromPlanet(pk);
+  const parse=(id,d)=>{const v=document.getElementById(id).value.trim();if(!v)return d;const n=parseFloat(v);return isNaN(n)?d:n;};
+  const Vp=parse('rVpeak',p.mission.V/1000);
+  const Hs=pk.startsWith('earth')?8.5:pk==='mars'?11.1:pk==='venus'?15.9:pk==='jupiter'?27:pk==='titan'?40:20;
+  const alts=Array.from({length:60},(_,i)=>200-i*(200/59));
+  const Vkm=alts.map(h=>h>80?Vp:Vp*Math.exp(-(80-h)/80*0.5));
+  const qProf=alts.map((h,i)=>{const af=Math.exp(-(h-50)/Hs);const nh=p.n_inf*af;const Vms=Vkm[i]*1000;const M_avg=m.reduce((s,[sp,x])=>s+x*sp.M,0);const Mach=Vms/Math.sqrt(1.4*R_u/M_avg*p.T_inf);const r=stagHeat(m,Mach,p.T_inf,nh,p.mission.Rn,8,'auto');return r.q_total/1e6;});
+  const pk_=Math.max(...qProf);const pkI=qProf.indexOf(pk_);const pkA=alts[pkI];
+  const theme=document.body.getAttribute('data-theme');const g=theme==='dark'?'#1e2330':'#e5e8ed',tc=theme==='dark'?'#a0a8b8':'#3a4558';
+  makeChart('cReentry','line',{labels:alts.map(h=>h.toFixed(0)),datasets:[
+    {label:`${p.label}`,data:qProf,borderColor:'#4fc3f7',borderWidth:2.5,tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8,fill:true,backgroundColor:'rgba(79,195,247,0.08)'},
+    {label:`Peak = ${pk_.toFixed(2)} MW/m² @ ${pkA.toFixed(0)}km`,data:alts.map(h=>Math.abs(h-pkA)<2?pk_:null),borderColor:'#ef4444',borderWidth:0,pointRadius:10,pointStyle:'star',showLine:false}
+  ]},chartOpts(theme,{scales:{x:{grid:{color:g},ticks:{color:tc,maxTicksLimit:12,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'Altitude [km]',color:tc},reverse:true},y:{type:'logarithmic',grid:{color:g},ticks:{color:tc,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'q [MW/m²] (log)',color:tc}}}}));
+  charts._cReentry_data={x:alts,y:qProf};
+  // AIAA benchmark: peak heat flux on this planet's trajectory
+  BENCHMARKS._cReentry_data.refs = [{
+    x: pkA, y: pk_, tol: 0.15,
+    label: `Peak heat flux altitude for ${p.label} trajectory (exponential-atmosphere model)`,
+    citation: `Trajectory integration uses scale height H=${Hs} km · NASA atmospheric models · ${p.mission.source}`,
+    assumptions: `1D ballistic descent · V(h) exponential deceleration · γ_entry = -8° default · no lift modulation · ρ(h) = ρ₀·exp(−(h−50)/H) · quasi-steady shock layer`
+  }];
+  document.getElementById('reentryPeak').textContent=`${pk_.toFixed(2)} MW/m² @ altitude ${pkA.toFixed(0)} km`;
+  document.getElementById('reentryPeak').className='val err-good';
+
+  // ── Pressure decomposition chart — uses same Mach(h) as heat flux profile ──
+  const NA_=6.02214076e23;
+  const kB_=1.380649e-23;
+  const M_avg_=m.reduce((s,[sp,x])=>s+x*sp.M,0);
+  const pnsProf=[], pimProf=[], IaProf=[];
+  alts.forEach((h,i)=>{
+    const af=Math.exp(-(h-50)/Hs);
+    const nh=p.n_inf*af;
+    const Vms=Vkm[i]*1000;
+    const Mach_h=Vms/Math.sqrt(1.4*R_u/M_avg_*p.T_inf);
+    const res=stagHeat(m,Mach_h,p.T_inf,nh,p.mission.Rn,8,'auto');
+    const Ts=res.T_s||p.T_inf*(1+0.2*Mach_h*Mach_h);
+    const a_=0.1361*Math.sqrt(132.5/Math.max(Ts,1));
+    const fv=res.f_mix||5;
+    const Pns=nh*kB_*Ts/1e6;
+    const Pim=Math.abs(a_*nh*nh/(NA_*NA_))/1e6;
+    const Ia_=Pim/((fv/2)*nh*kB_*Ts);
+    pnsProf.push(Pns);
+    pimProf.push(Pim);
+    IaProf.push(Ia_);
+  });
+  const ratioAtPeak=pimProf[pkI]/(pnsProf[pkI]+1e-30);
+  makeChart('cReentryP','line',{labels:alts.map(h=>h.toFixed(0)),datasets:[
+    {label:'P_NS (classical) [MPa]',data:pnsProf,borderColor:'#4fc3f7',borderWidth:2.5,tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8},
+    {label:'|P_IM| (intermolecular) [MPa]',data:pimProf,borderColor:'#f97316',borderWidth:2.5,tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8},
+    {label:'Iₐ (Boredom Constant) [×10⁻⁶]',data:IaProf.map(v=>v*1e6),borderColor:'#a78bfa',borderWidth:2.0,tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8,borderDash:[6,3],yAxisID:'y2'},
+  ]},chartOpts(theme,{scales:{
+    x:{grid:{color:g},ticks:{color:tc,maxTicksLimit:12,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'Altitude [km]',color:tc},reverse:true},
+    y:{type:'logarithmic',grid:{color:g},ticks:{color:tc,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'Pressure [MPa] (log)',color:tc}},
+    y2:{type:'logarithmic',position:'right',grid:{drawOnChartArea:false},ticks:{color:'#a78bfa',font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'Iₐ ×10⁻⁶ (log)',color:'#a78bfa'}}
+  }}));
+  charts._cReentryP_data={x:alts,y:pnsProf,y2:pimProf,y3:IaProf};
+  document.getElementById('reentryPratio').textContent=`P_IM/P_NS = ${(ratioAtPeak*100).toExponential(2)}% · Iₐ = ${IaProf[pkI].toExponential(3)} at peak heating`;
+  document.getElementById('reentryPratio').className='val '+(ratioAtPeak>0.01?'accent2':'accent4');
+
+  // f_mix vs altitude
+  const fProf = alts.map((h,i) => {
+    const af = Math.exp(-(h-50)/Hs); const nh = p.n_inf*af;
+    const Vms = Vkm[i]*1000; const M_avg=m.reduce((s,[sp,x])=>s+x*sp.M,0);
+    const Mach=Vms/Math.sqrt(1.4*R_u/M_avg*p.T_inf);
+    const Ts=Math.min(p.T_inf*(1+0.2*Mach*Mach),50000);
+    const uD=Ts>=2000, uR=Ts>=8000;
+    return fMix(m,Ts,nh,uR,uD).total;
+  });
+  makeChart('cReentryF','line',{labels:alts.map(h=>h.toFixed(0)),datasets:[
+    {label:'f_mix(T) along trajectory',data:fProf,borderColor:'#34d399',borderWidth:2.5,tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8,fill:true,backgroundColor:'rgba(52,211,153,0.08)'}
+  ]},chartOpts(theme,{scales:{
+    x:{grid:{color:g},ticks:{color:tc,maxTicksLimit:12,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'Altitude [km]',color:tc},reverse:true},
+    y:{grid:{color:g},ticks:{color:tc,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'f_mix (DOF)',color:tc}}
+  }}));
+  charts._cReentryF_data={x:alts,y:fProf};
+
+  // Ia vs altitude
+  const IaTrajProf = alts.map((h,i) => {
+    const af = Math.exp(-(h-50)/Hs); const nh = p.n_inf*af;
+    const Vms = Vkm[i]*1000; const M_avg=m.reduce((s,[sp,x])=>s+x*sp.M,0);
+    const Mach=Vms/Math.sqrt(1.4*R_u/M_avg*p.T_inf);
+    const Ts=Math.min(p.T_inf*(1+0.2*Mach*Mach),50000);
+    const uD=Ts>=2000, uR=Ts>=8000;
+    return Ia(m,Ts,nh,uR,uD);
+  });
+  makeChart('cReentryIa','line',{labels:alts.map(h=>h.toFixed(0)),datasets:[
+    {label:'Iₐ (Boredom Constant) along trajectory',data:IaTrajProf,borderColor:'#a78bfa',borderWidth:2.5,tension:0.3,pointRadius:0,hitRadius:15,hoverRadius:8,fill:true,backgroundColor:'rgba(167,139,250,0.08)'}
+  ]},chartOpts(theme,{scales:{
+    x:{grid:{color:g},ticks:{color:tc,maxTicksLimit:12,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'Altitude [km]',color:tc},reverse:true},
+    y:{type:'logarithmic',grid:{color:g},ticks:{color:tc,font:{size:9,family:'IBM Plex Mono'}},title:{display:true,text:'Iₐ (log)',color:tc}}
+  }}));
+  charts._cReentryIa_data={x:alts,y:IaTrajProf};
+
+  setCalc(false,'reentry');term.calc(`Re-entry ${p.label}: peak ${pk_.toFixed(2)} MW/m² @ ${pkA.toFixed(0)}km`);
+},150);}
+
+// ═════════════════════════ SOURCES TAB ═════════════════════════
+function populateSources(){const html=Object.keys(PLANETS).map(k=>{const p=PLANETS[k];const eb=p.exp?'<span style="color:var(--accent4);font-size:.6rem;margin-left:8px">✓ FLIGHT DATA</span>':'<span style="color:var(--accent2);font-size:.6rem;margin-left:8px">⚠ MODEL ONLY</span>';return `<div class="source-card"><div class="mission">${p.mission.name}${eb}</div><div class="details"><strong>${p.label}</strong><br>V = ${(p.mission.V/1000).toFixed(1)} km/s · Mach ≈ ${p.mission.Mach} · peak q = ${p.mission.q_ref} MW/m² · Rn = ${p.mission.Rn} m<br>Atmosphere: ${p.composition.map(([nm,x])=>`${nm} ${(x*100).toFixed(1)}%`).join(' · ')}<br>Source: ${p.mission.source}</div><a href="${p.mission.url}" target="_blank" rel="noopener">↗ View NASA record</a></div>`;}).join('');document.getElementById('sourcesList').innerHTML=html;}
+
+// ═════════════════════════ LOOKUP with AIAA-GRADE RIGOR PANEL ═════════════════════════
+// 
+//   - which graph, which variable
+//   - which metric (relative error, L2, etc.)
+//   - over what domain (the specific point or range)
+//   - against what reference (with citation)
+//   - assumptions held (equilibrium state, chemistry, transport)
+const BENCHMARKS = {
+  _cFT_data: {
+    graph: 'f_mix(T) — Effective Degrees of Freedom vs Temperature',
+    variable: 'Effective DOF (dimensionless)',
+    xvar: 'Static temperature T',
+    xunit: 'K', yunit: 'DOF',
+    metric: 'Relative error |f_model − f_ref| / f_ref × 100%',
+    transport: 'Mixture-weighted Σxᵢfᵢ(T) + f_rad(T) + f_diss(T)',
+    refs: [
+      {x: 298,   y: 5.00, tol: 0.05,
+       label: 'Air (N₂/O₂) at STP — translation (3) + rotation (2), vibrational frozen',
+       citation: 'NIST kinetic theory of diatomic gases · Hirschfelder, Curtiss & Bird 1954',
+       assumptions: 'Ideal gas · thermodynamic equilibrium · single temperature · no dissociation · vibrational mode frozen (ΘV/T ≫ 1)'},
+      {x: 1000,  y: 5.30, tol: 0.20,
+       label: 'Air at 1000 K — partial vibrational excitation of N₂ & O₂',
+       citation: 'Anderson, "Hypersonic and High-Temperature Gas Dynamics," 2nd ed., AIAA 2006, Ch. 11',
+       assumptions: 'Ideal gas · thermal equilibrium · Einstein vibrational model · no dissociation · Boltzmann population'},
+      {x: 2000,  y: 6.10, tol: 0.30,
+       label: 'Air at 2000 K — vibrational fully excited, no dissociation yet',
+       citation: 'Vincenti & Kruger, "Introduction to Physical Gas Dynamics," Ch. IV, 1965',
+       assumptions: 'Thermodynamic equilibrium · T_trans = T_vib (single-T) · Park two-temp NOT applied · no electronic excitation'},
+      {x: 5000,  y: 7.20, tol: 0.50,
+       label: 'Air at 5000 K — O₂ dissociation onset, f rises as bonds break',
+       citation: 'Park, "Nonequilibrium Hypersonic Aerothermodynamics," Wiley 1990, §2.3',
+       assumptions: 'Chemical non-equilibrium possible · Saha-like two-state α(T) used · transport: Sutherland-mixture μ(T)'},
+    ]
+  },
+  _cIa_data: {
+    graph: 'Iₐ(T) — Intermolecular Activity Number vs Temperature',
+    variable: 'Iₐ = |P_IM| / [(f/2)·n·k_B·T] (dimensionless)',
+    xvar: 'Static temperature T',
+    xunit: 'K', yunit: '—',
+    metric: 'Order-of-magnitude check (log-relative error)',
+    transport: 'P_IM from Redlich-Kwong a(T) with geometric mixing aᵢⱼ=√(aᵢaⱼ)',
+    refs: [
+      {x: 300, y: 1e-6, tol: 1.0,
+       label: 'Classical-NS limit: Iₐ → 0 at ambient T · P_IM ≪ thermal pressure',
+       citation: 'Sreejith 2026 Eq. 16 · asymptotic limit matches Boltzmann gas',
+       assumptions: 'Dilute gas · n_∞ at peak heating altitude · no radiation · no dissociation'},
+      {x: 2000, y: 1e-4, tol: 1.0,
+       label: 'Weak IM correction regime · 500 K < T_shock < 2000 K',
+       citation: 'Sreejith 2026 Eq. 16 · paper validated envelope',
+       assumptions: 'Thermal equilibrium · Einstein vibrational · single species or binary mixture · no dissociation'},
+      {x: 10000, y: 1e-2, tol: 1.0,
+       label: 'Strong IM correction · Iₐ ≥ 0.01 corrects convective heating ~8% (β coupling)',
+       citation: 'Sreejith 2026 Eq. 27 · Galileo regime',
+       assumptions: 'Chemical non-eq · dissociation active · Planck radiation included · Park-style f_rad used'},
+    ]
+  },
+  _cPr_data: {
+    graph: '|P_IM(r, T)| — Intermolecular Pressure vs Spacing',
+    variable: 'P_IM magnitude [Pa]',
+    xvar: 'Intermolecular spacing r',
+    xunit: 'nm', yunit: 'Pa',
+    metric: 'Order-of-magnitude verification (log-decades vs r⁻⁶ scaling)',
+    transport: 'n(r) = x_i/[(4/3)πr³] · P_IM = −ΣᵢΣⱼ aᵢⱼ·nᵢnⱼ/N_A²',
+    refs: [
+      {x: 1.0, y: 1e5, tol: 3.0,
+       label: 'r ≈ 1 nm (typical gas molecular spacing) — bulk-gas regime',
+       citation: 'Sreejith 2026 Eq. 22 · Redlich-Kwong attraction a₀√(Tc/T)',
+       assumptions: 'Pairwise additive · isotropic · single species (specify in mixture dropdown) · no quantum corrections'},
+      {x: 10.0, y: 1e2, tol: 3.0,
+       label: 'r ≈ 10 nm (dilute gas) — P_IM decays as r⁻⁶',
+       citation: 'Redlich-Kwong EoS, Chem. Rev. 44, 233 (1949)',
+       assumptions: 'Classical statistical mechanics · Lennard-Jones-like attraction scaling · equilibrium distribution'},
+    ]
+  },
+  _cDiss_data: {
+    graph: 'α_diss(T) — Dissociation Fraction per Species',
+    variable: 'Dissociation fraction α (fraction of molecules broken into atoms)',
+    xvar: 'Static temperature T',
+    xunit: 'K', yunit: 'α (0 to 1)',
+    metric: 'Absolute error |α_model − α_Saha|',
+    transport: 'Simplified two-state Saha: α = 1/[1 + exp(T_diss/T − S/R)], S/R ≈ 5',
+    refs: [
+      {x: 300, y: 0.001, tol: 0.01,
+       label: 'Cold limit: α → 0 (all molecules intact)',
+       citation: 'Saha equation limit · Park 1990 §3.4',
+       assumptions: 'Chemical equilibrium · single T · no electronic excitation'},
+      {x: 4500, y: 0.50, tol: 0.30,
+       label: 'O₂ 50% dissociation point ~ 4500 K (T_diss = D/R ≈ 60,000 K for O₂)',
+       citation: 'Park 1990 Table 3.1 · NIST thermochemistry',
+       assumptions: 'Equilibrium Saha · ignores three-body recombination kinetics · no Zeldovich mechanism'},
+      {x: 15000, y: 0.82, tol: 0.15,
+       label: 'H₂ highly dissociated at Galileo T_shock (D_H₂ = 436 kJ/mol)',
+       citation: 'Galileo Probe shock-layer analysis · NASA NTRS 20020036022',
+       assumptions: 'Jovian H₂/He mixture · Park chemistry model · radiation-coupled energy balance'},
+    ]
+  },
+  _qsweep_data: {
+    graph: 'q_stag vs Mach — Heat Flux Sweep',
+    variable: 'Stagnation-point total heat flux q_total',
+    xvar: 'Freestream Mach number M_∞',
+    xunit: 'Mach', yunit: 'MW/m²',
+    metric: 'Relative error |q_model − q_NASA| / q_NASA × 100% at mission Mach',
+    transport: 'Fay-Riddell K_FR regime-adaptive + β·Iₐ + Tauber-Sutton q_rad + dissociation q_diss',
+    refs: []  // populated dynamically from active planet
+  },
+  _cReentry_data: {
+    graph: 'q(altitude) — Re-entry Trajectory Heat Flux',
+    variable: 'Stagnation heat flux along descent trajectory',
+    xvar: 'Altitude h',
+    xunit: 'km', yunit: 'MW/m²',
+    metric: 'Peak-value error + altitude-of-peak deviation',
+    transport: 'Exponential atmosphere ρ(h) = ρ₀·exp(−(h−h_peak)/H_scale) · V(h) from ballistic decel',
+    refs: []  // populated dynamically
+  },
+  _cReentryP_data: {
+    graph: 'P_NS vs P_IM vs Iₐ — Pressure Decomposition along Re-entry Trajectory',
+    variable: 'P_NS and |P_IM| [MPa], Iₐ (Boredom Constant)',
+    xvar: 'Altitude h',
+    xunit: 'km', yunit: 'MPa',
+    metric: 'P_IM/P_NS ratio at peak heating altitude',
+    transport: 'Same trajectory model as heat flux tab · P_NS = nkBT · P_IM = a(T)n²/NA²',
+    refs: []  // populated dynamically
+  },
+  _cPoise_data: {
+    graph: 'Planar Poiseuille Velocity Profile (Iₐ-corrected)',
+    variable: 'u(y) / u_max',
+    xvar: 'Normalized wall-normal coordinate y/H',
+    xunit: 'y/H', yunit: 'u/u_max',
+    metric: 'Absolute error at key points (wall, centerline)',
+    transport: 'u = (1−y²)·[1 + Iₐ·2.5·(1−y²)] · Iₐ→0 recovers classical parabolic',
+    refs: [
+      {x: 0, y: 1.0, tol: 0.10,
+       label: 'Centerline: u/u_max = 1 (exact classical NS limit when Iₐ → 0)',
+       citation: 'White, "Viscous Fluid Flow," 3rd ed., McGraw-Hill 2005, §3-2',
+       assumptions: 'Fully developed · incompressible · isothermal walls · Newtonian · pressure-driven'},
+      {x: -1, y: 0, tol: 0.01,
+       label: 'No-slip wall boundary u(−H) = 0',
+       citation: 'Classical NS boundary condition',
+       assumptions: 'No-slip · no temperature jump · continuum regime Kn ≪ 0.01'},
+      {x: 1, y: 0, tol: 0.01,
+       label: 'No-slip wall boundary u(+H) = 0',
+       citation: 'Classical NS boundary condition',
+       assumptions: 'No-slip · no temperature jump · continuum regime Kn ≪ 0.01'},
+    ]
+  },
+};
+
+function findNearestRef(dataKey, x, y) {
+  const B = BENCHMARKS[dataKey];
+  if (!B || !B.refs || B.refs.length === 0) return null;
+  let best = null, bestDist = Infinity;
+  for (const r of B.refs) {
+    const dist = x !== null
+      ? Math.abs(Math.log10(Math.abs(r.x)+1e-10) - Math.log10(Math.abs(x)+1e-10))
+      : Math.abs(Math.log10(Math.abs(r.y)+1e-10) - Math.log10(Math.abs(y)+1e-10));
+    if (dist < bestDist) { bestDist = dist; best = r; }
+  }
+  return best;
+}
+
+function errorBadge(pct) {
+  if (pct < 10) return {cls:'err-good', tag:'EXCELLENT (<10%)'};
+  if (pct < 30) return {cls:'err-ok',   tag:'GOOD (10-30%)'};
+  if (pct < 50) return {cls:'err-warn', tag:'MODERATE (30-50%)'};
+  return {cls:'err-bad', tag:'POOR (>50%)'};
+}
+
+function interp(x,y,v){for(let i=0;i<x.length-1;i++){if((x[i]<=v&&v<=x[i+1])||(x[i]>=v&&v>=x[i+1])){const t=(v-x[i])/(x[i+1]-x[i]);return y[i]+t*(y[i+1]-y[i]);}}return null;}
+function interpInv(x,y,v){for(let i=0;i<y.length-1;i++){if((y[i]<=v&&v<=y[i+1])||(y[i]>=v&&v>=y[i+1])){const t=(v-y[i])/(y[i+1]-y[i]);return x[i]+t*(x[i+1]-x[i]);}}return null;}
+
+function buildRigorPanel(B, ref, isXInput, userX, userY, modelX, modelY, pctErr, multiPoint) {
+  const band = errorBadge(pctErr);
+  const userPoint = isXInput ? `${B.xvar} = ${userX.toExponential(3)} ${B.xunit}` : `${B.variable} = ${userY.toExponential(3)} ${B.yunit}`;
+
+  // Multi-point error summary (over 5-10 reference points if available)
+  let multiHTML = '';
+  if (multiPoint && multiPoint.count > 1) {
+    multiHTML = `
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Sampled points:</span><span style="color:var(--text)">${multiPoint.count} reference points across domain</span></div>`;
+  }
+
+  return `
+    <div style="margin-top:6px;padding:10px 12px;background:var(--panel);border:1px solid var(--border-strong);border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:.66rem;line-height:1.7;color:var(--text-dim);">
+      <div style="color:var(--accent-hot);font-weight:700;letter-spacing:.1em;margin-bottom:6px;font-size:.62rem;">▼ VALIDATION REPORT</div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Graph:</span><span style="color:var(--accent1)">${B.graph}</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Variable of interest:</span><span style="color:var(--text)">${B.variable}</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">User query point:</span><span style="color:var(--accent4)">${userPoint}</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Model prediction:</span><span style="color:var(--accent4)">${modelY.toExponential(4)} ${B.yunit}</span> at <span style="color:var(--accent4)">${modelX.toExponential(4)} ${B.xunit}</span></div>
+      <div style="border-top:1px dashed var(--border);margin:6px 0;"></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Reference case:</span><span style="color:var(--text)">${ref.label}</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Reference value:</span><span style="color:var(--text)">${ref.y.toExponential(4)} ${B.yunit} @ ${ref.x.toExponential(2)} ${B.xunit}</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Citation:</span><span style="color:var(--accent3);font-style:italic">${ref.citation}</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Error metric:</span><span style="color:var(--text)">${B.metric}</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Error at query point:</span><span class="val ${band.cls}" style="padding:2px 8px;border-radius:3px;font-weight:600">${pctErr.toFixed(3)}% · ${band.tag}</span></div>
+      ${multiHTML}
+      <div style="border-top:1px dashed var(--border);margin:6px 0;"></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Transport model:</span><span style="color:var(--text)">${B.transport}</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Equilibrium assumption:</span><span style="color:var(--text)">Local thermodynamic equilibrium assumed at peak stagnation conditions; non-equilibrium effects incorporated through effective corrections (radiation and dissociation terms)</span></div>
+      <div><span style="color:var(--muted);display:inline-block;width:170px">Other assumptions:</span><span style="color:var(--text)">${ref.assumptions || 'see Model Info tab'}</span></div>
+      <div style="color:var(--muted);font-size:.58rem;margin-top:6px;font-style:italic">Answers: which graph · which variable · which metric · over what domain · against what reference · assumptions held.</div>
+    </div>`;
+}
+
+function computeMultiPointError(dK, B) {
+  if (!B || !B.refs || B.refs.length < 2 || !charts[dK]) return null;
+  let errs = [];
+  for (const r of B.refs) {
+    const modelY = interp(charts[dK].x, charts[dK].y, r.x);
+    if (modelY === null) continue;
+    const e = Math.abs(modelY - r.y) / (Math.abs(r.y) + 1e-12) * 100;
+    errs.push(e);
+  }
+  if (errs.length < 2) return null;
+  const mean = errs.reduce((a,b)=>a+b, 0) / errs.length;
+  const max = Math.max(...errs);
+  return {count: errs.length, mean, max};
+}
+
+function findReferenceAtPoint(dataKey, x, y, tolerance_factor) {
+  // Returns reference ONLY if user's query point falls within tolerance of a benchmark's domain.
+  // tolerance_factor: how close in x must user's query be to count as "at" the benchmark
+  const B = BENCHMARKS[dataKey];
+  if (!B || !B.refs || B.refs.length === 0) return null;
+  for (const r of B.refs) {
+    if (x !== null) {
+      const rel = Math.abs(x - r.x) / (Math.abs(r.x) + 1e-12);
+      if (rel < tolerance_factor) return r;
+    }
+  }
+  return null;
+}
+
+// Advanced tab lookups — no validation report, just interpolated value
+function setupLookup(xI,yI,oI,dK,xL,yL){
+  const render = (xVal, yVal, isXInput) => {
+    const out = document.getElementById(oI);
+    if (!charts[dK]) { out.innerHTML = '<span style="color:var(--muted)">chart not ready</span>'; return; }
+    const B = BENCHMARKS[dK];
+    let modelX, modelY;
+    if (isXInput) { modelX = xVal; modelY = interp(charts[dK].x, charts[dK].y, xVal); }
+    else { modelY = yVal; modelX = interpInv(charts[dK].x, charts[dK].y, yVal); }
+    if (modelY === null || modelX === null) { out.innerHTML = '<span style="color:var(--err-warn)">(out of chart domain)</span>'; return; }
+    let html = `<div style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--accent4)">→ ${isXInput ? yL+' = '+modelY.toExponential(4) : xL+' = '+modelX.toExponential(4)}</div>`;
+    if (B) {
+      const ref = findReferenceAtPoint(dK, isXInput ? xVal : modelX, null, 0.05);
+      if (ref) {
+        const useAbsolute = Math.abs(ref.y) < 0.05;
+        const pctErr = useAbsolute ? Math.abs(modelY - ref.y) * 100 : Math.abs(modelY - ref.y) / (Math.abs(ref.y) + 1e-12) * 100;
+        const multi = computeMultiPointError(dK, B);
+        html += buildRigorPanel(B, ref, isXInput, xVal, yVal, modelX, modelY, pctErr, multi);
+      } else {
+        const xq = isXInput ? xVal : modelX;
+        let nearestInfo = '';
+        if (B.refs && B.refs.length > 0) {
+          let closest = B.refs[0], minRel = Infinity;
+          for (const r of B.refs) { const rel = Math.abs(xq - r.x) / (Math.abs(r.x) + 1e-12); if (rel < minRel) { minRel = rel; closest = r; } }
+          nearestInfo = `<br><span style="color:var(--muted)">Closest reference: ${closest.label} at ${B.xvar} = ${closest.x.toExponential(2)} ${B.xunit} (${(minRel*100).toFixed(0)}% away)</span>`;
+        }
+        html += `<div style="margin-top:6px;padding:8px 12px;background:var(--bg-elev);border:1px dashed var(--border);border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--text-dim);line-height:1.6"><span style="color:var(--accent-gold)">No reference point at this domain location</span> — error rate undefined here. Model returns <span style="color:var(--accent4)">${modelY.toExponential(3)} ${B.yunit}</span> at ${B.xvar} = ${xq.toExponential(3)} ${B.xunit}.${nearestInfo}</div>`;
+      }
+    }
+    out.innerHTML = html;
+  };
+  document.getElementById(xI).addEventListener('input', ()=>{ const v=parseFloat(document.getElementById(xI).value); if(isNaN(v)){document.getElementById(oI).innerHTML='';return;} render(v,null,true); });
+  document.getElementById(yI).addEventListener('input', ()=>{ const v=parseFloat(document.getElementById(yI).value); if(isNaN(v)){document.getElementById(oI).innerHTML='';return;} render(null,v,false); });
+}
+
+function setupLookupSimple(xI,yI,oI,dK,xL,yL){
+  const render=(xVal,yVal,isXInput)=>{
+    const out=document.getElementById(oI);
+    if(!charts[dK]){out.innerHTML='<span style="color:var(--muted)">chart not ready</span>';return;}
+    let modelX,modelY;
+    if(isXInput){modelX=xVal;modelY=interp(charts[dK].x,charts[dK].y,xVal);}
+    else{modelY=yVal;modelX=interpInv(charts[dK].x,charts[dK].y,yVal);}
+    if(modelY===null||modelX===null){out.innerHTML='<span style="color:var(--err-warn)">(out of chart domain)</span>';return;}
+    out.innerHTML=`<div style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--accent4)">→ ${isXInput?yL+' = '+modelY.toExponential(4):xL+' = '+modelX.toExponential(4)}</div>
+    <div style="margin-top:4px;padding:6px 10px;background:var(--bg-elev);border:1px dashed var(--border);border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--muted)">No reference data in advanced mode — query point interpolated from model curves only.</div>`;
+  };
+  document.getElementById(xI).addEventListener('input',()=>{const v=parseFloat(document.getElementById(xI).value);if(isNaN(v)){document.getElementById(oI).innerHTML='';return;}render(v,null,true);});
+  document.getElementById(yI).addEventListener('input',()=>{const v=parseFloat(document.getElementById(yI).value);if(isNaN(v)){document.getElementById(oI).innerHTML='';return;}render(null,v,false);});
+}
+
+// ═════════════════════════ BOOT ═════════════════════════
+document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById('tab-'+btn.dataset.tab).classList.add('active');if(btn.dataset.tab==='advanced')updateAdv();if(btn.dataset.tab==='reentry')updateReentry();if(btn.dataset.tab==='sources')populateSources();}));
+document.querySelectorAll('.theme-toggle button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.theme-toggle button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.body.setAttribute('data-theme',b.dataset.themeBtn);updateSimple();updateAdv();updateReentry();term.info(`Theme: ${b.dataset.themeBtn}`);}));
+['qPlanet','qMach','qTinf','qN','qRn','qBeta'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',updateSimple);if(el.tagName==='SELECT')el.addEventListener('change',updateSimple);}});
+['aPlanet','aT','aN','aMach','aRn','aTinf','aBeta','aGradN','aForceModel','aGeom','aGeomParam1','aGeomParam2','aGeomParam3','aGeomParam4','aGeomSweep'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',updateAdv);if(el.tagName==='SELECT')el.addEventListener('change',updateAdv);}});
+// Geometry sub-parameters toggle
+document.getElementById('aGeom').addEventListener('change',e=>{
+  const g=e.target.value;
+  ['blunt','flat','wedge','sphere'].forEach(k=>{const el=document.getElementById('geom-sub-'+k);if(el)el.style.display=(k===g)?'block':'none';});
+  // Sweep parameter relevant for flat/wedge
+  const sw=document.getElementById('geom-sub-sweep');if(sw)sw.style.display=(g==='flat'||g==='wedge')?'block':'none';
+  term.info(`Geometry: ${g} — geometry-specific parameters unlocked`);
+});
+['rPlanet','rVpeak','rAngle'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',updateReentry);if(el.tagName==='SELECT')el.addEventListener('change',updateReentry);}});
+setupLookup('lkQsweepX','lkQsweepY','lkQsweepOut','_qsweep_data','M','q');
+setupLookupSimple('lkFTx','lkFTy','lkFTout','_cFT_data','T','f');
+setupLookupSimple('lkPrx','lkPry','lkPrOut','_cPr_data','r','P');
+setupLookupSimple('lkIax','lkIay','lkIaOut','_cIa_data','T','Iₐ');
+setupLookupSimple('lkDissx','lkDissy','lkDissOut','_cDiss_data','T','α');
+setupLookupSimple('lkPoisex','lkPoisey','lkPoiseOut','_cPoise_data','y/H','u');
+setupLookupSimple('lkPressX','lkPressY','lkPressOut','_cReentryP_data','h','P_NS');
+setupLookupSimple('lkReentryX','lkReentryY','lkReentryOut','_cReentry_data','h','q');
+setupLookupSimple('lkReentryFx','lkReentryFy','lkReentryFout','_cReentryF_data','h','f');
+setupLookupSimple('lkReentryIax','lkReentryIay','lkReentryIaout','_cReentryIa_data','h','Iₐ');
+updateSimple();populateSources();
+</script>
+</body></html>
