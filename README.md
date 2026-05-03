@@ -7,7 +7,7 @@
 
 ## Status
 
-This repository contains a preliminary research manuscript submitted to the **AIAA Journal**.
+This manuscript is
 
 - Not yet peer-reviewed
 - Shared for technical scrutiny and feedback
